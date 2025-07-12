@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>P2P Analytics Bolivia - El Mejor Momento para Comprar y Vender USDT</title>
@@ -12,7 +13,7 @@
         }
         .hero-gradient {
             background: linear-gradient(145deg, #f0f9ff 0%, #e0f2fe 100%);
-        }
+        }preview
         .feature-icon {
             background: #0ea5e9; /* Light Blue */
             color: white;
@@ -152,7 +153,16 @@
             </div>
         </div>
     </section>
-
+    
+    <section id="preview" class="py-20 bg-gray-50">
+    <div class="container mx-auto px-6">
+        <h2 class="text-3xl font-bold text-center mb-8">Análisis de Precios en Tiempo Real</h2>
+        <div class="bg-white rounded-lg shadow-2xl p-4 md:p-8">
+            <canvas id="priceChart"></canvas>
+        </div>
+    </div>
+    </section>
+    
     <!-- Registration Section -->
     <section id="register" class="bg-sky-600 text-white">
         <div class="container mx-auto px-6 py-20 text-center">
@@ -315,8 +325,66 @@
             const userProfile = profileSelect.value;
             const prompt = `Actúa como un asesor de trading educativo. Un usuario con un perfil **'${userProfile}'** quiere una estrategia simple para el mercado P2P en Bolivia. Describe una estrategia de 3 pasos que se enfoque en el perfil del usuario. Por ejemplo, para un perfil conservador, enfócate en minimizar riesgos. Para un perfil agresivo, en maximizar ganancias. El objetivo es puramente educativo, no es un consejo financiero. **Formatea la respuesta con negritas y emojis para cada paso (como 🎯, 🛡️, 🚀).** Mantén el texto corto, en español y fácil de entender.`;
             callGemini(prompt, generateStrategyBtn, strategyLoader, strategyResultDiv);
-        });
+                });
+        // (Dentro de tu <script type="module"> existente)
 
+        // --- LÓGICA DEL GRÁFICO DE PRECIOS ---
+        const API_URL = "https://p2p-analytics-bolivia-681190831507.us-central1.run.app"; // <-- ¡TU URL DE CLOUD RUN!
+
+        async function fetchAndDrawChart() {
+            try {
+                // Llama a tu nueva API
+                const response = await fetch(`${API_URL}/api/price-analytics?days=7&trade_type=SELL&frequency=1H`);
+                if (!response.ok) {
+                    throw new Error(`Error en la API: ${response.statusText}`);
+                }
+                const data = await response.json();
+
+                // Prepara los datos para Chart.js
+                const labels = data.metrics.map(d => new Date(d.timestamp).toLocaleString());
+                const prices = data.metrics.map(d => d.precio_promedio);
+
+                const buyMoments = data.buy_moments.map(d => ({
+                    x: new Date(d.timestamp).toLocaleString(),
+                    y: d.precio_promedio
+                }));
+
+                // Dibuja el gráfico
+                const ctx = document.getElementById('priceChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Precio Promedio de Compra (Bs.)',
+                            data: prices,
+                            borderColor: 'rgb(54, 162, 235)',
+                            tension: 0.1
+                        }, {
+                            label: 'Buen Momento para Comprar',
+                            data: buyMoments,
+                            type: 'scatter',
+                            backgroundColor: 'rgb(75, 192, 192)',
+                            radius: 6,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'top' },
+                            title: { display: true, text: 'Evolución del Precio USDT (Últimos 7 días)'}
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error("No se pudo cargar el gráfico:", error);
+                // Podrías mostrar un mensaje de error en la UI
+            }
+        }
+
+        // Llama a la función cuando la página se cargue
+        document.addEventListener('DOMContentLoaded', fetchAndDrawChart);
     </script>
 </body>
 </html>
