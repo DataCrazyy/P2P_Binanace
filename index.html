@@ -13,6 +13,7 @@
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
 
     <style>
+        #priceChart { min-height: 400px; }
         body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
         .hero-gradient { background: linear-gradient(145deg, #f0f9ff 0%, #e0f2fe 100%); }
         .feature-icon { background: #0ea5e9; color: white; }
@@ -320,12 +321,14 @@
                 url.searchParams.append('trade_type', chartState.tradeType);
                 url.searchParams.append('frequency', chartState.frequency);
 
+                
                 const response = await fetch(url);
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.detail || `Error ${response.status}`);
                 }
                 const data = await response.json();
+                console.log("DATA ANALYTICS", data); // <--- AÑADE ESTO
 
                 if (!data.metrics || data.metrics.length === 0) { throw new Error("No hay suficientes datos para este filtro."); }
 
@@ -479,10 +482,17 @@
             setInterval(fetchMarketSummary, 60000); // Actualiza cada 60 segundos (60000 ms)
             
             setupEventListeners();
-            
-            if (chartElement) {
-                updateChart();
-            }
+                        
+            setTimeout(() => {
+                if (datepicker && datepicker.selectedDates.length === 2) {
+                    updateChart();
+                } else {
+                    const dates = datepicker.selectedDates;
+                    if (!dates || dates.length < 2) {
+                        console.warn("No se seleccionó un rango válido por defecto.");
+                    }
+                }
+            }, 500);
         });
     </script>
 </body>
