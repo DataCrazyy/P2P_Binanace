@@ -329,17 +329,14 @@
 
                 if (!data.metrics || data.metrics.length === 0) { throw new Error("No hay suficientes datos para este filtro."); }
 
-                // **MODIFICACIÓN CLAVE: Función para mapear datos de forma segura**
                 const safeMapData = (point, valueKey) => {
                     const timestamp = new Date(point.timestamp).getTime();
-                    // Si el timestamp no es un número válido, o el valor es nulo/indefinido, el punto no es válido
                     if (isNaN(timestamp) || point[valueKey] == null) {
                         return null; 
                     }
                     return [timestamp, point[valueKey]];
                 };
 
-                // **MODIFICACIÓN CLAVE: Filtrar puntos nulos después de mapear**
                 const priceSeries = { name: 'Precio Promedio', data: data.metrics.map(d => safeMapData(d, 'precio_promedio')).filter(p => p !== null) };
                 const minPriceSeries = { name: 'Precio Mínimo', data: data.metrics.map(d => safeMapData(d, 'precio_minimo')).filter(p => p !== null) };
                 const maxPriceSeries = { name: 'Precio Máximo', data: data.metrics.map(d => safeMapData(d, 'precio_maximo')).filter(p => p !== null) };
@@ -349,7 +346,6 @@
                     series.push(maxPriceSeries, minPriceSeries);
                 }
                 
-                // **MODIFICACIÓN CLAVE: Usar != null para filtrar tanto null como undefined**
                 const buyAnnotations = chartState.showMoments ? data.buy_moments
                     .filter(d => d.precio_promedio != null)
                     .map(d => ({
@@ -459,7 +455,11 @@
             
             tradeTypeToggle.checked = (chartState.tradeType === 'SELL');
             updateTradeTypeLabels();
-            fetchMarketSummary();
+
+            // ✅ SOLUCIÓN: Carga inicial y luego actualiza periódicamente
+            fetchMarketSummary(); // Carga los datos la primera vez
+            setInterval(fetchMarketSummary, 60000); // Actualiza cada 60 segundos (60000 ms)
+            
             setupEventListeners();
             
             if (chartElement) {
