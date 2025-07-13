@@ -329,12 +329,30 @@
 
                 if (!data.metrics || data.metrics.length === 0) { throw new Error("No hay suficientes datos para este filtro."); }
 
+// index.html -> dentro de la etiqueta <script>
+
+                // REEMPLAZA ESTA FUNCIÓN COMPLETA
                 const safeMapData = (point, valueKey) => {
+                    // 1. Validar que el punto y su timestamp existan
+                    if (!point || !point.timestamp) {
+                        return null;
+                    }
                     const timestamp = new Date(point.timestamp).getTime();
-                    if (isNaN(timestamp) || point[valueKey] == null) {
+                    const value = point[valueKey];
+
+                    // 2. Validar que el timestamp sea un número y el valor no sea nulo/indefinido
+                    if (isNaN(timestamp) || value === null || typeof value === 'undefined') {
                         return null; 
                     }
-                    return [timestamp, point[valueKey]];
+
+                    // 3. Convertir el valor a número y validar que no sea NaN (Not-a-Number)
+                    const numericValue = parseFloat(value);
+                    if (isNaN(numericValue)) {
+                        return null;
+                    }
+
+                    // 4. Devolver el punto de datos válido
+                    return [timestamp, numericValue];
                 };
 
                 const priceSeries = { name: 'Precio Promedio', data: data.metrics.map(d => safeMapData(d, 'precio_promedio')).filter(p => p !== null) };
