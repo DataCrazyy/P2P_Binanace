@@ -193,32 +193,27 @@
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
         const firebaseConfig = { apiKey: "AIzaSyAaJ4ELW_HLcjlHXDVIASrPpctWMIHYeIo", authDomain: "p2p-analytics-bolivia.firebaseapp.com", projectId: "p2p-analytics-bolivia", storageBucket: "p2p-analytics-bolivia.firebasestorage.app", messagingSenderId: "681190831507", appId: "1:681190831507:web:7ce2211b0356ac5b20e466", measurementId: "G-NVNVSYDJ46" };
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // ✅ **SOLUCIÓN 2: LÓGICA COMPLETA DEL FORMULARIO RESTAURADA**
+        
+        // Lógica del formulario de registro funcional
         const signupForm = document.getElementById('signup-form');
         if (signupForm) {
             signupForm.addEventListener('submit', async (e) => {
-                // Previene la recarga de la página
                 e.preventDefault(); 
-                
                 const nameInput = document.getElementById('name');
                 const emailInput = document.getElementById('email');
                 const signupMessage = document.getElementById('signup-message');
                 const name = nameInput.value.trim();
                 const email = emailInput.value.trim();
-
                 if (name && email) {
                     const submitButton = signupForm.querySelector('button');
                     submitButton.disabled = true;
                     submitButton.textContent = 'Registrando...';
                     try {
-                        await addDoc(collection(db, "early_access_registrations"), { name: name, email: email, timestamp: new Date() });
+                        await addDoc(collection(db, "early_access_registrations"), { name, email, timestamp: new Date() });
                         signupMessage.textContent = "¡Gracias! Registro exitoso.";
                         signupMessage.className = "mt-4 text-sm font-medium h-5 text-green-300";
                         signupForm.reset();
                     } catch (error) {
-                        console.error("Error al añadir documento: ", error);
                         signupMessage.textContent = "Error en el registro. Inténtalo de nuevo.";
                         signupMessage.className = "mt-4 text-sm font-medium h-5 text-red-300";
                     } finally {
@@ -233,13 +228,12 @@
         }
         
         // ===================================================================
-        // --- SECCIÓN DE GRÁFICO CON AJUSTES FINALES ---
+        // --- CÓDIGO DE GRÁFICO CON AJUSTES FINALES ---
         // ===================================================================
         const API_URL = "https://p2p-analytics-bolivia-681190831507.us-central1.run.app";
         const chartElement = document.getElementById('priceChart');
         const chartLoader = document.getElementById('chart-loader');
         
-        // Referencias a los controles
         const tradeTypeToggle = document.getElementById('trade-type-toggle');
         const frequencySelect = document.getElementById('frequency-select');
         const dateRangePickerInput = document.getElementById('date-range-picker');
@@ -259,6 +253,7 @@
         };
         
         function updateTradeTypeLabels() {
+            // ... (sin cambios)
             const labelComprar = document.getElementById('label-comprar');
             const labelVender = document.getElementById('label-vender');
             if (chartState.userAction === 'COMPRAR') {
@@ -275,6 +270,7 @@
         }
 
         async function fetchMarketSummary() {
+            // ... (sin cambios)
             try {
                 const response = await fetch(`${API_URL}/api/market-summary`);
                 if (!response.ok) return;
@@ -359,23 +355,36 @@
 
                 const options = {
                     series: series,
-                    annotations: { points: pointAnnotations, xaxis: volatilityAnnotations },
-                    // ✅ **SOLUCIÓN 1: BARRA DE HERRAMIENTAS PERSONALIZADA**
+                    annotations: { 
+                        points: pointAnnotations, 
+                        xaxis: volatilityAnnotations,
+                        // ✅ **SOLUCIÓN 2: MARCA DE AGUA**
+                        texts: [{
+                            text: 'P2P Analytics',
+                            x: '50%',
+                            y: '50%',
+                            textAnchor: 'middle',
+                            foreColor: 'rgba(220, 220, 220, 0.6)',
+                            fontSize: '32px',
+                            fontWeight: 700,
+                        }]
+                    },
                     chart: { 
                         type: 'line', 
                         height: 450, 
+                        // ✅ **SOLUCIÓN 1: BARRA DE HERRAMIENTAS PERSONALIZADA**
                         toolbar: {
                             show: true,
                             tools: {
-                                download: false, // Ocultar descarga
-                                selection: false, // Ocultar zoom de selección
-                                zoom: false, // Ocultar lupa de zoom
-                                zoomin: false, // Ocultar zoom in
-                                zoomout: false, // Ocultar zoom out
-                                pan: true, // Mantener paneo (mover)
-                                reset: true // Mantener reseteo de zoom/pan
+                                download: false,
+                                selection: false, 
+                                zoom: false, // Oculta lupa de zoom
+                                zoomin: true, // Muestra '+'
+                                zoomout: true, // Muestra '-'
+                                pan: true, // Muestra mano para mover
+                                reset: true // Muestra botón de reinicio
                             },
-                            autoSelected: 'pan' // Iniciar con la herramienta de mover seleccionada
+                            autoSelected: 'pan' // Inicia en modo "mover"
                         }
                     },
                     colors: chartColors,
@@ -397,6 +406,7 @@
         }
         
         function setupEventListeners() {
+            // ... (sin cambios)
             tradeTypeToggle.addEventListener('change', () => { 
                 chartState.userAction = tradeTypeToggle.checked ? 'VENDER' : 'COMPRAR'; 
                 updateTradeTypeLabels();
@@ -421,10 +431,10 @@
         }
         
         document.addEventListener('DOMContentLoaded', () => {
+            // ... (sin cambios)
             const today = new Date();
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(today.getDate() - 7);
-
             datepicker = flatpickr(dateRangePickerInput, {
                 mode: "range", 
                 dateFormat: "Y-m-d", 
@@ -433,18 +443,14 @@
                 locale: "es",
                 onClose: (selectedDates) => { if (selectedDates.length === 2) updateChart(); }
             });
-            
             tradeTypeToggle.checked = (chartState.userAction === 'VENDER');
             showRangeCheck.checked = chartState.showRange;
             showMomentsCheck.checked = chartState.showMoments;
             showVolatilityCheck.checked = chartState.showVolatility;
-
             updateTradeTypeLabels();
             fetchMarketSummary();
             setInterval(fetchMarketSummary, 60000); 
-            
             setupEventListeners();
-            
             updateChart();
         });
     </script>
