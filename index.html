@@ -303,6 +303,8 @@
             } catch (error) { console.error("Error al cargar resumen del mercado:", error); }
         }
 
+    // Reemplaza toda tu función updateChart con esta versión corregida
+
         async function updateChart() {
             if (!chartElement || !datepicker) return;
             
@@ -341,13 +343,31 @@
                 };
 
                 const priceSeries = { name: 'Precio Promedio', data: data.metrics.map(d => safeMapData(d, 'precio_promedio')).filter(p => p !== null) };
-                const minPriceSeries = { name: 'Precio Mínimo', data: data.metrics.map(d => safeMapData(d, 'precio_minimo')).filter(p => p !== null) };
-                const maxPriceSeries = { name: 'Precio Máximo', data: data.metrics.map(d => safeMapData(d, 'precio_maximo')).filter(p => p !== null) };
                 
                 let series = [priceSeries];
+                
+                // ======================= INICIO DE LA CORRECCIÓN =======================
+                // Define las opciones de estilo (colores y trazos) de forma dinámica
+                let chartColors = ['#0d6efd'];
+                let strokeOptions = {
+                    width: [2.5],
+                    curve: 'smooth',
+                    dashArray: [0]
+                };
+
                 if (chartState.showRange) {
+                    const minPriceSeries = { name: 'Precio Mínimo', data: data.metrics.map(d => safeMapData(d, 'precio_minimo')).filter(p => p !== null) };
+                    const maxPriceSeries = { name: 'Precio Máximo', data: data.metrics.map(d => safeMapData(d, 'precio_maximo')).filter(p => p !== null) };
+                    
+                    // Si el rango está activo, se añaden las series de max/min
                     series.push(maxPriceSeries, minPriceSeries);
+
+                    // Y se añaden sus estilos correspondientes
+                    chartColors = ['#0d6efd', '#dc3545', '#28a745'];
+                    strokeOptions.width = [2.5, 1.5, 1.5];
+                    strokeOptions.dashArray = [0, 4, 4];
                 }
+                // ======================= FIN DE LA CORRECCIÓN =======================
                 
                 const buyAnnotations = chartState.showMoments ? data.buy_moments
                     .filter(d => d.precio_promedio != null)
@@ -370,7 +390,6 @@
                     for (let i = 0; i < data.metrics.length - 1; i++) {
                         const currentPoint = data.metrics[i];
                         const nextPoint = data.metrics[i+1];
-                        
                         if (currentPoint.volatilidad != null && currentPoint.precio_promedio != null) {
                             volatilityAnnotations.push({
                                 x: new Date(currentPoint.timestamp).getTime(),
@@ -381,11 +400,6 @@
                         }
                     }
                 }
-                
-                // ✅ CONSOLE.LOGS MOVIDOS A UN LUGAR SEGURO
-                console.log("Datos recibidos de la API:", data);
-                console.log("Series procesadas para la gráfica:", series);
-                console.log("Anotaciones de Compra/Venta:", [...buyAnnotations, ...sellAnnotations]);
 
                 const options = {
                     series: series,
@@ -397,15 +411,13 @@
                         locales: [{ name: 'es', options: { months: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"], shortMonths: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"], days: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"], shortDays: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"], toolbar: { download: 'Descargar SVG', selection: 'Selección', selectionZoom: 'Zoom Selección', zoomIn: 'Acercar', zoomOut: 'Alejar', pan: 'Mover', reset: 'Reiniciar Zoom' }} }],
                         defaultLocale: 'es'
                     },
-                    colors: ['#0d6efd', '#dc3545', '#28a745'],
-                    stroke: { width: [2.5, 1.5, 1.5], curve: 'smooth', dashArray: [0, 4, 4] },
+                    colors: chartColors, // Usa los colores dinámicos
+                    stroke: strokeOptions, // Usa los trazos dinámicos
                     xaxis: { type: 'datetime', labels: { datetimeUTC: false, format: 'dd MMM HH:mm' } },
                     yaxis: {
                         labels: {
                             formatter: function (value) {
-                                if (typeof value === 'number') {
-                                    return value.toFixed(2) + " Bs.";
-                                }
+                                if (typeof value === 'number') { return value.toFixed(2) + " Bs."; }
                                 return '';
                             }
                         },
@@ -415,9 +427,7 @@
                         x: { format: 'dd MMM yyyy - HH:mm' },
                         y: {
                             formatter: function (value) {
-                                if (typeof value === 'number') {
-                                    return value.toFixed(3) + " Bs.";
-                                }
+                                if (typeof value === 'number') { return value.toFixed(3) + " Bs."; }
                                 return "N/A";
                             }
                         }
@@ -433,9 +443,8 @@
             } finally {
                 chartLoader.classList.add('hidden');
             }
-        }
-        
-        function setupEventListeners() {
+        }        
+                function setupEventListeners() {
             tradeTypeToggle.addEventListener('change', () => { 
                 chartState.tradeType = tradeTypeToggle.checked ? 'SELL' : 'BUY'; 
                 updateTradeTypeLabels(); 
