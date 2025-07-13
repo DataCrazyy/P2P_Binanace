@@ -188,41 +188,24 @@
     </footer>
 
     <script type="module">
-        // --- SECCIÓN DE FIREBASE (NO REQUIERE CAMBIOS) ---
+        // --- SECCIÓN DE FIREBASE (SIN CAMBIOS) ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-        const firebaseConfig = {
-            apiKey: "AIzaSyAaJ4ELW_HLcjlHXDVIASrPpctWMIHYeIo",
-            authDomain: "p2p-analytics-bolivia.firebaseapp.com",
-            projectId: "p2p-analytics-bolivia",
-            storageBucket: "p2p-analytics-bolivia.firebasestorage.app",
-            messagingSenderId: "681190831507",
-            appId: "1:681190831507:web:7ce2211b0356ac5b20e466",
-            measurementId: "G-NVNVSYDJ46"
-        };
+        const firebaseConfig = { apiKey: "AIzaSyAaJ4ELW_HLcjlHXDVIASrPpctWMIHYeIo", authDomain: "p2p-analytics-bolivia.firebaseapp.com", projectId: "p2p-analytics-bolivia", storageBucket: "p2p-analytics-bolivia.firebasestorage.app", messagingSenderId: "681190831507", appId: "1:681190831507:web:7ce2211b0356ac5b20e466", measurementId: "G-NVNVSYDJ46" };
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const signupForm = document.getElementById('signup-form');
-        if (signupForm) {
-            signupForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                // Esta lógica no afecta al gráfico, se mantiene igual
-            });
-        }
-        
+        // ... Lógica del formulario de registro ...
+
         // ===================================================================
-        // --- PASO 1: CÓDIGO DE GRÁFICO MÍNIMO PARA ENCONTRAR EL ERROR ---
+        // --- PASO 2: REACTIVANDO EL RANGO (MIN/MAX) ---
         // ===================================================================
         const API_URL = "https://p2p-analytics-bolivia-681190831507.us-central1.run.app";
         const chartElement = document.getElementById('priceChart');
         const chartLoader = document.getElementById('chart-loader');
         
-        // Referencias a los controles que usaremos
+        // Referencias a los controles
         const tradeTypeToggle = document.getElementById('trade-type-toggle');
         const frequencySelect = document.getElementById('frequency-select');
         const dateRangePickerInput = document.getElementById('date-range-picker');
-        
-        // Controles de features (por ahora no los usaremos, pero los declaramos)
         const showRangeCheck = document.getElementById('show-range');
         const showMomentsCheck = document.getElementById('show-moments');
         const showVolatilityCheck = document.getElementById('show-volatility');
@@ -230,16 +213,16 @@
         let priceChart = null; 
         let datepicker = null;
 
-        // Estado simplificado
+        // Estado con la propiedad 'showRange' reactivada
         const chartState = {
             tradeType: 'SELL',
             frequency: '1h',
+            showRange: true, // Reactivado
         };
         
         function updateTradeTypeLabels() {
             const labelComprar = document.getElementById('label-comprar');
             const labelVender = document.getElementById('label-vender');
-            
             if (chartState.tradeType === 'BUY') {
                 labelComprar.classList.add('font-bold', 'text-sky-600');
                 labelComprar.classList.remove('text-gray-500');
@@ -254,6 +237,7 @@
         }
 
         async function fetchMarketSummary() {
+            // ... (esta función no cambia)
             try {
                 const response = await fetch(`${API_URL}/api/market-summary`);
                 if (!response.ok) return;
@@ -261,7 +245,6 @@
                 document.getElementById('metric-buy-price').textContent = `${(data.latest_buy_price || 0).toFixed(2)} Bs.`;
                 document.getElementById('metric-sell-price').textContent = `${(data.latest_sell_price || 0).toFixed(2)} Bs.`;
                 document.getElementById('metric-spread').textContent = `${(data.spread || 0).toFixed(3)} Bs.`;
-
                 if (data.last_updated) {
                     const lastUpdatedDate = new Date(data.last_updated);
                     document.getElementById('last-updated-timestamp').textContent = lastUpdatedDate.toLocaleString('es-BO', { timeZone: 'America/La_Paz', hour12: true, year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -296,39 +279,58 @@
                     throw new Error(errorData.detail || `Error ${response.status}`);
                 }
                 const data = await response.json();
-                console.log("Datos recibidos de la API:", data);
                 
                 if (!data.metrics || data.metrics.length === 0) {
                     throw new Error("No hay suficientes datos para este filtro.");
                 }
 
-                // Mapeo simple y seguro de los datos de la serie principal
-                const priceSeriesData = data.metrics.map(point => {
-                    const value = parseFloat(point.precio_promedio);
+                const safeMapData = (point, valueKey) => {
+                    const value = parseFloat(point[valueKey]);
                     const timestamp = new Date(point.timestamp).getTime();
-                    // Devuelve null si algún valor es inválido para filtrarlo después
-                    if (isNaN(value) || isNaN(timestamp)) {
-                        return null;
-                    }
+                    if (isNaN(value) || isNaN(timestamp)) return null;
                     return [timestamp, value];
-                }).filter(p => p !== null); // Filtra los puntos nulos
+                };
 
-                if (priceSeriesData.length === 0) {
-                    throw new Error("No hay datos de precio promedio válidos para mostrar.");
+                const priceSeries = { 
+                    name: 'Precio Promedio', 
+                    data: data.metrics.map(d => safeMapData(d, 'precio_promedio')).filter(p => p !== null) 
+                };
+                
+                // --- LÓGICA DEL RANGO REACTIVADA ---
+                let series = [priceSeries];
+                let chartColors = ['#0d6efd'];
+                let strokeOptions = {
+                    width: 2.5,
+                    curve: 'smooth',
+                    dashArray: 0
+                };
+
+                if (chartState.showRange) {
+                    const minPriceSeries = { 
+                        name: 'Precio Mínimo', 
+                        data: data.metrics.map(d => safeMapData(d, 'precio_minimo')).filter(p => p !== null)
+                    };
+                    const maxPriceSeries = { 
+                        name: 'Precio Máximo', 
+                        data: data.metrics.map(d => safeMapData(d, 'precio_maximo')).filter(p => p !== null)
+                    };
+                    
+                    series.push(maxPriceSeries, minPriceSeries);
+                    chartColors = ['#0d6efd', '#dc3545', '#28a745'];
+                    strokeOptions.width = [2.5, 1.5, 1.5];
+                    strokeOptions.dashArray = [0, 4, 4];
                 }
 
-                // --- CONFIGURACIÓN MÍNIMA Y SEGURA ---
                 const options = {
-                    series: [{
-                        name: 'Precio Promedio',
-                        data: priceSeriesData
-                    }],
+                    series: series,
                     chart: {
                         type: 'line',
                         height: 450,
                         toolbar: { show: true },
                         zoom: { enabled: true }
                     },
+                    colors: chartColors,
+                    stroke: strokeOptions,
                     xaxis: {
                         type: 'datetime',
                         labels: { datetimeUTC: false }
@@ -337,18 +339,9 @@
                         title: { text: 'Precio (BOB)' },
                         labels: {
                             formatter: function (val) {
-                                // El 'try-catch' aquí es una defensa extra
-                                try {
-                                    return val.toFixed(2) + " Bs.";
-                                } catch (e) {
-                                    return '';
-                                }
+                                try { return val.toFixed(2) + " Bs."; } catch (e) { return ''; }
                             }
                         }
-                    },
-                    stroke: {
-                        width: 2.5,
-                        curve: 'smooth'
                     },
                     tooltip: {
                         x: { format: 'dd MMM yyyy - HH:mm' }
@@ -376,8 +369,13 @@
                 chartState.frequency = frequencySelect.value; 
                 updateChart(); 
             });
-            // Por ahora, los checkboxes no hacen nada para no interferir
-            showRangeCheck.addEventListener('change', () => console.log("Rango cambiado. Funcionalidad desactivada temporalmente."));
+            
+            // Listener para el checkbox "Rango" reactivado
+            showRangeCheck.addEventListener('change', () => {
+                chartState.showRange = showRangeCheck.checked;
+                updateChart();
+            });
+            
             showMomentsCheck.addEventListener('change', () => console.log("Momentos cambiado. Funcionalidad desactivada temporalmente."));
             showVolatilityCheck.addEventListener('change', () => console.log("Volatilidad cambiado. Funcionalidad desactivada temporalmente."));
         }
@@ -400,6 +398,7 @@
                 }
             });
             
+            showRangeCheck.checked = chartState.showRange; // Sincroniza el checkbox con el estado inicial
             updateTradeTypeLabels();
             fetchMarketSummary();
             setInterval(fetchMarketSummary, 60000); 
