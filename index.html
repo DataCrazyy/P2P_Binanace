@@ -252,7 +252,7 @@
         }
         
         // ===================================================================
-        // --- CÓDIGO DE GRÁFICO CON AJUSTES FINALES ---
+        // --- CÓDIGO DE GRÁFICO CON LÍNEA DE TENDENCIA ---
         // ===================================================================
         const API_URL = "https://p2p-analytics-bolivia-681190831507.us-central1.run.app";
         const chartElement = document.getElementById('priceChart');
@@ -277,7 +277,6 @@
         };
         
         function updateTradeTypeLabels() {
-            // ... (sin cambios)
             const labelComprar = document.getElementById('label-comprar');
             const labelVender = document.getElementById('label-vender');
             if (chartState.userAction === 'COMPRAR') {
@@ -294,7 +293,6 @@
         }
 
         async function fetchMarketSummary() {
-            // ... (sin cambios)
             try {
                 const response = await fetch(`${API_URL}/api/market-summary`);
                 if (!response.ok) return;
@@ -344,7 +342,22 @@
                     return [timestamp, value];
                 };
 
-                const priceSeries = { name: 'Precio Promedio', data: data.metrics.map(d => safeMapData(d, 'precio_promedio')).filter(p => p !== null) };
+                // ✅ **AÑADIMOS LA CONFIGURACIÓN DE LA LÍNEA DE TENDENCIA AQUÍ**
+                const priceSeries = {
+                    name: 'Precio Promedio',
+                    data: data.metrics.map(d => safeMapData(d, 'precio_promedio')).filter(p => p !== null),
+                    // --- INICIO: CONFIGURACIÓN DE LÍNEA DE TENDENCIA ---
+                    trendline: {
+                        enabled: true,
+                        type: 'linear',
+                        color: '#888888',
+                        strokeWidth: 2,
+                        dashArray: 5, // Esto la hace punteada
+                        opacity: 0.8
+                    }
+                    // --- FIN: CONFIGURACIÓN DE LÍNEA DE TENDENCIA ---
+                };
+                
                 let series = [priceSeries];
                 let chartColors = ['#0d6efd'];
                 let strokeOptions = { width: 2.5, curve: 'smooth', dashArray: 0 };
@@ -382,7 +395,6 @@
                     annotations: { 
                         points: pointAnnotations, 
                         xaxis: volatilityAnnotations,
-                        // ✅ **SOLUCIÓN 2: MARCA DE AGUA**
                         texts: [{
                             text: 'P2P Analytics',
                             x: '50%',
@@ -396,19 +408,18 @@
                     chart: { 
                         type: 'line', 
                         height: 450, 
-                        // ✅ **SOLUCIÓN 1: BARRA DE HERRAMIENTAS PERSONALIZADA**
                         toolbar: {
                             show: true,
                             tools: {
                                 download: false,
                                 selection: false, 
-                                zoom: false, // Oculta lupa de zoom
-                                zoomin: true, // Muestra '+'
-                                zoomout: true, // Muestra '-'
-                                pan: true, // Muestra mano para mover
-                                reset: true // Muestra botón de reinicio
+                                zoom: false, 
+                                zoomin: true,
+                                zoomout: true,
+                                pan: true,
+                                reset: true
                             },
-                            autoSelected: 'pan' // Inicia en modo "mover"
+                            autoSelected: 'pan'
                         }
                     },
                     colors: chartColors,
@@ -430,7 +441,6 @@
         }
         
         function setupEventListeners() {
-            // ... (sin cambios)
             tradeTypeToggle.addEventListener('change', () => { 
                 chartState.userAction = tradeTypeToggle.checked ? 'VENDER' : 'COMPRAR'; 
                 updateTradeTypeLabels();
@@ -455,7 +465,6 @@
         }
         
         document.addEventListener('DOMContentLoaded', () => {
-            // ... (sin cambios)
             const today = new Date();
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(today.getDate() - 7);
@@ -467,14 +476,18 @@
                 locale: "es",
                 onClose: (selectedDates) => { if (selectedDates.length === 2) updateChart(); }
             });
+            
             tradeTypeToggle.checked = (chartState.userAction === 'VENDER');
             showRangeCheck.checked = chartState.showRange;
             showMomentsCheck.checked = chartState.showMoments;
             showVolatilityCheck.checked = chartState.showVolatility;
+
             updateTradeTypeLabels();
             fetchMarketSummary();
             setInterval(fetchMarketSummary, 60000); 
+            
             setupEventListeners();
+            
             updateChart();
         });
     </script>
