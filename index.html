@@ -431,7 +431,23 @@
                 const options = {
                     series: series,
                     annotations: { points: pointAnnotations, xaxis: volatilityAnnotations },
-                    chart: { type: 'line', height: 450, toolbar: { show: true }, zoom: { enabled: true } },
+                    chart: {
+                        type: 'line',
+                        height: 450,
+                        toolbar: {
+                            show: true,
+                            tools: {
+                                download: false,      // Oculta el botón de descarga
+                                selection: false,     // Oculta la herramienta de selección de área
+                                zoom: false,          // Oculta la herramienta principal de zoom (lupa)
+                                zoomin: true,         // MUESTRA el botón de acercar (+)
+                                zoomout: true,        // MUESTRA el botón de alejar (-)
+                                pan: true,            // MUESTRA la herramienta de mover (mano)
+                                reset: true           // MUESTRA el botón de reiniciar
+                            },
+                            autoSelected: 'pan' // Inicia con la mano (pan) como herramienta activa
+                        }
+                    },
                     colors: chartColors,
                     stroke: strokeOptions,
                     xaxis: { type: 'datetime', labels: { datetimeUTC: false } },
