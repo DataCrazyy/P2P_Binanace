@@ -193,8 +193,7 @@
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
         // ⚠️ ADVERTENCIA DE SEGURIDAD: Estas claves están expuestas en el lado del cliente.
-        // Un atacante podría usarlas para interactuar con tus servicios de Firebase.
-        // Considera usar reglas de seguridad de Firestore y App Check para proteger tus recursos.
+        // Para un proyecto real, protege estas claves con reglas de seguridad y App Check.
         const firebaseConfig = {
             apiKey: "AIzaSyAaJ4ELW_HLcjlHXDVIASrPpctWMIHYeIo",
             authDomain: "p2p-analytics-bolivia.firebaseapp.com",
@@ -269,7 +268,6 @@
             const labelComprar = document.getElementById('label-comprar');
             const labelVender = document.getElementById('label-vender');
             
-            // Lógica corregida para que la etiqueta activa coincida con el estado
             if (chartState.tradeType === 'BUY') {
                 labelComprar.classList.add('font-bold', 'text-sky-600');
                 labelComprar.classList.remove('text-gray-500');
@@ -376,7 +374,6 @@
                     }
                 }
                 
-                // --- OBJETO DE OPCIONES CORREGIDO Y MÁS SEGURO ---
                 const options = {
                     series: series,
                     annotations: { points: [...buyAnnotations, ...sellAnnotations], xaxis: volatilityAnnotations },
@@ -387,7 +384,7 @@
                         locales: [{ name: 'es', options: { months: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"], shortMonths: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"], days: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"], shortDays: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"], toolbar: { download: 'Descargar SVG', selection: 'Selección', selectionZoom: 'Zoom Selección', zoomIn: 'Acercar', zoomOut: 'Alejar', pan: 'Mover', reset: 'Reiniciar Zoom' }} }],
                         defaultLocale: 'es'
                     },
-                    colors: ['#0d6efd', '#dc3545', '#28a745'], // Ajustado para que el máximo (rojo) y mínimo (verde) coincidan con la leyenda
+                    colors: ['#0d6efd', '#dc3545', '#28a745'],
                     stroke: { width: [2.5, 1.5, 1.5], curve: 'smooth', dashArray: [0, 4, 4] },
                     xaxis: { type: 'datetime', labels: { datetimeUTC: false, format: 'dd MMM HH:mm' } },
                     yaxis: {
@@ -413,7 +410,7 @@
                         }
                     }
                 };
-                console.log("Enviando estas opciones a ApexCharts:", options); // <-- AÑADE ESTA LÍNEA
+                
                 priceChart = new ApexCharts(chartElement, options);
                 priceChart.render();
 
@@ -451,8 +448,7 @@
                 }
             });
             
-            // Inicialización correcta de la UI
-            tradeTypeToggle.checked = (chartState.tradeType === 'SELL'); // Sincroniza el toggle con el estado inicial
+            tradeTypeToggle.checked = (chartState.tradeType === 'SELL');
             updateTradeTypeLabels();
             fetchMarketSummary();
             setupEventListeners();
