@@ -12,10 +12,8 @@
         body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
         .hero-gradient { background: linear-gradient(145deg, #f0f9ff 0%, #e0f2fe 100%); }
         .feature-icon { background: #0ea5e9; color: white; }
-        .ai-gradient { background: linear-gradient(160deg, #f0f9ff 0%, #ffffff 100%); }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* Estilos para el interruptor (toggle) */
         .toggle-checkbox:checked { right: 0; border-color: #3498db; }
         .toggle-checkbox:checked + .toggle-label { background-color: #3498db; }
     </style>
@@ -108,7 +106,7 @@
                         </div>
                     </div>
 
-                    <div class="flex flex-col items-center">
+                     <div class="flex flex-col items-center">
                         <label for="frequency-select" class="font-semibold mb-2">Agrupar datos por:</label>
                         <select id="frequency-select" class="w-full max-w-xs px-4 py-2 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-500 rounded-md">
                             <option value="5T">5 Minutos</option>
@@ -120,7 +118,7 @@
                         </select>
                     </div>
                     
-                    <div class="flex flex-col items-center">
+                     <div class="flex flex-col items-center">
                         <span class="font-semibold mb-2">Opciones del Gráfico</span>
                         <div class="flex space-x-4">
                             <label class="flex items-center cursor-pointer"><input type="checkbox" id="show-trend" class="mr-2" checked>Tendencia</label>
@@ -137,7 +135,7 @@
                     </div>
                 </div>
                 
-                <div id="chart-explanation" class="mt-6 p-4 bg-sky-50 rounded-lg text-gray-700 border-l-4 border-sky-400">
+                 <div id="chart-explanation" class="mt-6 p-4 bg-sky-50 rounded-lg text-gray-700 border-l-4 border-sky-400">
                     <h4 class="font-bold text-lg mb-2">💡 ¿Qué significan los puntos y zonas en el gráfico?</h4>
                     <ul class="list-disc list-inside space-y-1">
                         <li><strong class="text-green-600">Círculos Verdes (🟢):</strong> Muestran los precios históricamente más bajos del período. Buenos momentos para <strong>comprar</strong>.</li>
@@ -180,31 +178,52 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // Reemplaza esto con tu configuración real de Firebase
         const firebaseConfig = {
-        apiKey: "AIzaSyAaJ4ELW_HLcjlHXDVIASrPpctWMIHYeIo",
-        authDomain: "p2p-analytics-bolivia.firebaseapp.com",
-        projectId: "p2p-analytics-bolivia",
-        storageBucket: "p2p-analytics-bolivia.firebasestorage.app",
-        messagingSenderId: "681190831507",
-        appId: "1:681190831507:web:7ce2211b0356ac5b20e466",
-        measurementId: "G-NVNVSYDJ46"
+            apiKey: "AIza...",
+            authDomain: "...",
+            projectId: "...",
+            storageBucket: "...",
+            messagingSenderId: "...",
+            appId: "..."
         };
-
-        
         try {
             const app = initializeApp(firebaseConfig);
             const db = getFirestore(app);
-            // Lógica del formulario de registro... (sin cambios)
+            const submitButton = document.getElementById('submit-button');
+            if (submitButton) {
+                submitButton.addEventListener('click', async () => {
+                    const nameInput = document.getElementById('name');
+                    const emailInput = document.getElementById('email');
+                    const registrationForm = document.getElementById('registration-form');
+                    const successMessage = document.getElementById('success-message');
+                    const name = nameInput.value.trim();
+                    const email = emailInput.value.trim();
+                    if (!name || !email || !/^\S+@\S+\.\S+$/.test(email)) {
+                        alert('Por favor, completa los campos con un correo válido.');
+                        return;
+                    }
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Registrando...';
+                    try {
+                        await addDoc(collection(db, "leads"), { name, email, registeredAt: serverTimestamp() });
+                        registrationForm.classList.add('hidden');
+                        successMessage.classList.remove('hidden');
+                    } catch (e) {
+                        alert('Hubo un error al registrar tus datos.');
+                        submitButton.disabled = false;
+                        submitButton.textContent = '¡Quiero mi Acceso!';
+                    }
+                });
+            }
         } catch(e) { console.error("Error inicializando Firebase:", e); }
 
-
         // --- SECCIÓN DE MÉTRICAS Y GRÁFICO ---
-        const API_URL = "https://p2p-analytics-bolivia-681190831507.us-central1.run.app"; // "https://p2p-analytics-bolivia-....run.app"
+        const API_URL = "https://p2p-analytics-bolivia-681190831507.us-central1.run.app";
         
         const chartCanvas = document.getElementById('priceChart');
         const chartLoader = document.getElementById('chart-loader');
         
-        // Controles del gráfico
         const tradeTypeToggle = document.getElementById('trade-type-toggle');
         const frequencySelect = document.getElementById('frequency-select');
         const showTrendCheck = document.getElementById('show-trend');
@@ -215,22 +234,21 @@
 
         let priceChart = null; 
 
-        // Estado centralizado de la configuración del gráfico
         const chartState = {
-            tradeType: 'SELL', // Inicia en modo Venta (que es para Comprar USDT)
-            frequency: '1H',
+            tradeType: 'SELL',
+            frequency: '1h',
             showTrend: true,
             showMoments: true,
             showVolatility: true,
         };
 
         function updateTradeTypeLabels() {
-            if (chartState.tradeType === 'SELL') { // SELL es para usuarios que quieren COMPRAR
+            if (chartState.tradeType === 'SELL') {
                 labelComprar.classList.add('font-bold', 'text-sky-600');
                 labelComprar.classList.remove('text-gray-500');
                 labelVender.classList.remove('font-bold', 'text-sky-600');
                 labelVender.classList.add('text-gray-500');
-            } else { // BUY es para usuarios que quieren VENDER
+            } else {
                 labelVender.classList.add('font-bold', 'text-sky-600');
                 labelVender.classList.remove('text-gray-500');
                 labelComprar.classList.remove('font-bold', 'text-sky-600');
@@ -251,8 +269,7 @@
             }
         }
 
-// REEMPLAZA TU FUNCIÓN ACTUAL CON ESTA VERSIÓN MEJORADA
-
+        // REEMPLAZA TU FUNCIÓN ENTERA CON ESTA
         async function updateChart() {
             if (!chartCanvas) return;
             
@@ -291,7 +308,6 @@
                         label: 'Zona Calma',
                         data: calmPrices,
                         fill: 'start',
-                        // --- MEJORA 2: Opacidad reducida ---
                         backgroundColor: 'rgba(54, 162, 235, 0.08)', 
                         borderColor: 'transparent',
                         pointRadius: 0,
@@ -301,7 +317,6 @@
                         label: 'Zona Agitada',
                         data: agitatedPrices,
                         fill: 'start',
-                        // --- MEJORA 2: Opacidad reducida ---
                         backgroundColor: 'rgba(255, 159, 64, 0.15)',
                         borderColor: 'transparent',
                         pointRadius: 0,
@@ -318,23 +333,22 @@
                     borderColor: mainColor,
                     backgroundColor: 'transparent',
                     tension: 0.1,
-                    borderWidth: 2.5, // Ligeramente más fina
+                    borderWidth: 2.5,
                     order: 2
                 });
 
-                // 3. Línea de Tendencia
+                // 3. Línea de Tendencia (CON LOS ESTILOS CORREGIDOS)
                 if(chartState.showTrend) {
                     const trendData = data.metrics.map(d => d.tendencia);
                     datasets.push({
                         type: 'line',
                         label: 'Tendencia',
                         data: trendData,
-                        // --- MEJORA 1: Nuevo color para la tendencia ---
                         borderColor: '#696969', // Gris oscuro
-                        borderDash: [6, 3],
+                        borderDash: [6, 3],   // Nuevo estilo de guion
                         fill: false,
                         pointRadius: 0,
-                        borderWidth: 2,
+                        borderWidth: 2,       // Línea más gruesa
                         order: 1
                     });
                 }
@@ -348,9 +362,8 @@
                         type: 'scatter',
                         label: 'Buen Momento para Comprar (Hist.)',
                         data: buyMarkers,
-                        backgroundColor: '#28a745', // Verde más brillante
+                        backgroundColor: '#28a745',
                         borderColor: '#FFFFFF',
-                        // --- MEJORA 3: Puntos más grandes y visibles ---
                         radius: 7,
                         borderWidth: 2,
                         pointStyle: 'circle',
@@ -360,9 +373,8 @@
                         type: 'scatter',
                         label: 'Buen Momento para Vender (Hist.)',
                         data: sellMarkers,
-                        backgroundColor: '#dc3545', // Rojo más brillante
+                        backgroundColor: '#dc3545',
                         borderColor: '#FFFFFF',
-                        // --- MEJORA 3: Puntos más grandes y visibles ---
                         radius: 7,
                         borderWidth: 2,
                         pointStyle: 'crossRot',
@@ -396,17 +408,14 @@
                             }
                         },
                         plugins: {
-                            // --- MEJORA 5: Limpiar la leyenda ---
                             legend: { 
                                 position: 'top',
                                 labels: {
-                                    // Filtra las etiquetas que no queremos mostrar
                                     filter: function(legendItem) {
                                         return !legendItem.text.includes('Zona');
                                     }
                                 }
                             },
-                            // --- MEJORA 4: Tooltips más informativos ---
                             tooltip: {
                                 mode: 'index',
                                 intersect: false,
@@ -414,10 +423,8 @@
                                     label: function(context) {
                                         const label = context.dataset.label || '';
                                         if (!label) return null;
-
                                         const value = context.parsed.y;
                                         if (value === null) return null;
-
                                         return `${label}: ${value.toFixed(3)} Bs.`;
                                     }
                                 }
@@ -440,7 +447,7 @@
         }        
         // --- Event Listeners para los controles ---
         tradeTypeToggle.addEventListener('change', (event) => {
-            chartState.tradeType = event.target.checked ? 'SELL' : 'BUY';
+            chartState.tradeType = event.target.checked ? 'BUY' : 'SELL';
             updateTradeTypeLabels();
             updateChart();
         });
@@ -463,11 +470,8 @@
 
         // --- Carga Inicial ---
         document.addEventListener('DOMContentLoaded', () => {
-            // Inicializa los labels del toggle
             updateTradeTypeLabels();
-            // Desmarca el toggle al inicio para que coincida con "Vender USDT"
-            tradeTypeToggle.checked = true;
-            // Busca datos iniciales
+            tradeTypeToggle.checked = false; // Inicia en 'Comprar USDT'
             fetchMarketSummary();
             if (chartCanvas) {
                 updateChart();
