@@ -196,7 +196,7 @@
         // ... Lógica del formulario de registro ...
 
         // ===================================================================
-        // --- CÓDIGO FINAL CON TODAS LAS FUNCIONALIDADES ---
+        // --- CÓDIGO FINAL CON LÓGICA INTUITIVA Y TODAS LAS FUNCIONES ---
         // ===================================================================
         const API_URL = "https://p2p-analytics-bolivia-681190831507.us-central1.run.app";
         const chartElement = document.getElementById('priceChart');
@@ -213,24 +213,25 @@
         let priceChart = null; 
         let datepicker = null;
 
-        // Estado final con todas las propiedades activas
+        // ✅ **LÓGICA CORREGIDA**: El estado ahora refleja la ACCIÓN DEL USUARIO
         const chartState = {
-            tradeType: 'SELL',
+            userAction: 'COMPRAR', // Por defecto mostramos el mercado de compra
             frequency: '1h',
             showRange: true,
             showMoments: true,
-            showVolatility: true, // Reactivado
+            showVolatility: true,
         };
         
+        // ✅ **LÓGICA CORREGIDA**: Resalta la etiqueta que corresponde a la acción del usuario
         function updateTradeTypeLabels() {
             const labelComprar = document.getElementById('label-comprar');
             const labelVender = document.getElementById('label-vender');
-            if (chartState.tradeType === 'BUY') {
+            if (chartState.userAction === 'COMPRAR') {
                 labelComprar.classList.add('font-bold', 'text-sky-600');
                 labelComprar.classList.remove('text-gray-500');
                 labelVender.classList.remove('font-bold', 'text-sky-600');
                 labelVender.classList.add('text-gray-500');
-            } else {
+            } else { // userAction es 'VENDER'
                 labelVender.classList.add('font-bold', 'text-sky-600');
                 labelVender.classList.remove('text-gray-500');
                 labelComprar.classList.remove('font-bold', 'text-sky-600');
@@ -239,7 +240,7 @@
         }
 
         async function fetchMarketSummary() {
-            // ... (esta función no cambia)
+            // ... (esta función no necesita cambios, ya que siempre muestra ambos precios)
             try {
                 const response = await fetch(`${API_URL}/api/market-summary`);
                 if (!response.ok) return;
@@ -268,10 +269,15 @@
                 const startDate = datepicker.selectedDates[0].toISOString().split('T')[0];
                 const endDate = datepicker.selectedDates[1].toISOString().split('T')[0];
 
+                // ✅ **LÓGICA CORREGIDA**: Traduce la acción del usuario al tipo de anuncio correcto para la API
+                // Si quiero COMPRAR, busco anuncios de VENTA ('SELL')
+                // Si quiero VENDER, busco anuncios de COMPRA ('BUY')
+                const apiTradeType = (chartState.userAction === 'COMPRAR') ? 'SELL' : 'BUY';
+
                 const url = new URL(`${API_URL}/api/price-analytics`);
                 url.searchParams.append('start_date', startDate);
                 url.searchParams.append('end_date', endDate);
-                url.searchParams.append('trade_type', chartState.tradeType);
+                url.searchParams.append('trade_type', apiTradeType);
                 url.searchParams.append('frequency', chartState.frequency);
 
                 const response = await fetch(url);
@@ -283,6 +289,7 @@
                 
                 if (!data.metrics || data.metrics.length === 0) throw new Error("No hay suficientes datos para este filtro.");
 
+                // El resto de la lógica de renderizado ya era correcta...
                 const safeMapData = (point, valueKey) => {
                     const value = parseFloat(point[valueKey]);
                     const timestamp = new Date(point.timestamp).getTime();
@@ -290,10 +297,7 @@
                     return [timestamp, value];
                 };
 
-                const priceSeries = { 
-                    name: 'Precio Promedio', 
-                    data: data.metrics.map(d => safeMapData(d, 'precio_promedio')).filter(p => p !== null) 
-                };
+                const priceSeries = { name: 'Precio Promedio', data: data.metrics.map(d => safeMapData(d, 'precio_promedio')).filter(p => p !== null) };
                 
                 let series = [priceSeries];
                 let chartColors = ['#0d6efd'];
@@ -302,7 +306,6 @@
                 if (chartState.showRange) {
                     const minPriceSeries = { name: 'Precio Mínimo', data: data.metrics.map(d => safeMapData(d, 'precio_minimo')).filter(p => p !== null) };
                     const maxPriceSeries = { name: 'Precio Máximo', data: data.metrics.map(d => safeMapData(d, 'precio_maximo')).filter(p => p !== null) };
-                    
                     series.push(maxPriceSeries, minPriceSeries);
                     chartColors = ['#0d6efd', '#dc3545', '#28a745'];
                     strokeOptions.width = [2.5, 1.5, 1.5];
@@ -311,61 +314,31 @@
 
                 let pointAnnotations = [];
                 if (chartState.showMoments) {
-                    const buyAnnotations = data.buy_moments
-                        .map(d => ({
-                            x: new Date(d.timestamp).getTime(),
-                            y: parseFloat(d.precio_promedio),
-                            marker: { size: 5, fillColor: '#198754', strokeColor: '#fff', radius: 2 },
-                            label: { text: 'Comprar', borderColor: '#198754', style: { color: '#fff', background: '#198754', fontSize: '10px' } }
-                        }));
-                    const sellAnnotations = data.sell_moments
-                        .map(d => ({
-                            x: new Date(d.timestamp).getTime(),
-                            y: parseFloat(d.precio_promedio),
-                            marker: { size: 5, fillColor: '#dc3545', strokeColor: '#fff', radius: 2 },
-                            label: { text: 'Vender', borderColor: '#dc3545', style: { color: '#fff', background: '#dc3545', fontSize: '10px' } }
-                        }));
+                    const buyAnnotations = data.buy_moments.map(d => ({ x: new Date(d.timestamp).getTime(), y: parseFloat(d.precio_promedio), marker: { size: 5, fillColor: '#198754', strokeColor: '#fff', radius: 2 }, label: { text: 'Comprar', borderColor: '#198754', style: { color: '#fff', background: '#198754', fontSize: '10px' } } }));
+                    const sellAnnotations = data.sell_moments.map(d => ({ x: new Date(d.timestamp).getTime(), y: parseFloat(d.precio_promedio), marker: { size: 5, fillColor: '#dc3545', strokeColor: '#fff', radius: 2 }, label: { text: 'Vender', borderColor: '#dc3545', style: { color: '#fff', background: '#dc3545', fontSize: '10px' } } }));
                     pointAnnotations = [...buyAnnotations, ...sellAnnotations];
                 }
 
-                // --- LÓGICA DE VOLATILIDAD REACTIVADA ---
                 let volatilityAnnotations = [];
                 if (chartState.showVolatility && data.metrics.length > 1) {
                     const volThreshold = data.volatility_threshold;
                     for (let i = 0; i < data.metrics.length - 1; i++) {
                         const currentPoint = data.metrics[i];
                         const nextPoint = data.metrics[i+1];
-                        // Asegurarse que la volatilidad existe para este punto
                         if (currentPoint.volatilidad != null) {
-                            volatilityAnnotations.push({
-                                x: new Date(currentPoint.timestamp).getTime(),
-                                x2: new Date(nextPoint.timestamp).getTime(),
-                                fillColor: currentPoint.volatilidad <= volThreshold ? 'rgba(54, 162, 235, 0.2)' : 'rgba(255, 159, 64, 0.2)',
-                                label: { text: '' }
-                            });
+                            volatilityAnnotations.push({ x: new Date(currentPoint.timestamp).getTime(), x2: new Date(nextPoint.timestamp).getTime(), fillColor: currentPoint.volatilidad <= volThreshold ? 'rgba(54, 162, 235, 0.2)' : 'rgba(255, 159, 64, 0.2)', label: { text: '' } });
                         }
                     }
                 }
 
                 const options = {
                     series: series,
-                    // Objeto de anotaciones final con puntos y zonas del eje X
-                    annotations: {
-                        points: pointAnnotations,
-                        xaxis: volatilityAnnotations
-                    },
+                    annotations: { points: pointAnnotations, xaxis: volatilityAnnotations },
                     chart: { type: 'line', height: 450, toolbar: { show: true }, zoom: { enabled: true } },
                     colors: chartColors,
                     stroke: strokeOptions,
                     xaxis: { type: 'datetime', labels: { datetimeUTC: false } },
-                    yaxis: {
-                        title: { text: 'Precio (BOB)' },
-                        labels: {
-                            formatter: function (val) {
-                                try { return val.toFixed(2) + " Bs."; } catch (e) { return ''; }
-                            }
-                        }
-                    },
+                    yaxis: { title: { text: 'Precio (BOB)' }, labels: { formatter: function (val) { try { return val.toFixed(2) + " Bs."; } catch (e) { return ''; } } } },
                     tooltip: { x: { format: 'dd MMM yyyy - HH:mm' } }
                 };
                 
@@ -381,11 +354,13 @@
         }
         
         function setupEventListeners() {
+            // ✅ **LÓGICA CORREGIDA**: El toggle ahora establece la ACCIÓN DEL USUARIO
             tradeTypeToggle.addEventListener('change', () => { 
-                chartState.tradeType = tradeTypeToggle.checked ? 'SELL' : 'BUY'; 
+                chartState.userAction = tradeTypeToggle.checked ? 'VENDER' : 'COMPRAR'; 
                 updateTradeTypeLabels();
                 updateChart(); 
             });
+
             frequencySelect.addEventListener('change', () => { 
                 chartState.frequency = frequencySelect.value; 
                 updateChart(); 
@@ -401,7 +376,6 @@
                 updateChart();
             });
             
-            // Listener para "Volatilidad" reactivado
             showVolatilityCheck.addEventListener('change', () => {
                 chartState.showVolatility = showVolatilityCheck.checked;
                 updateChart();
@@ -424,7 +398,8 @@
                 }
             });
             
-            // Sincroniza todos los checkboxes con el estado inicial
+            // ✅ **LÓGICA CORREGIDA**: Sincroniza el toggle con la acción del usuario
+            tradeTypeToggle.checked = (chartState.userAction === 'VENDER');
             showRangeCheck.checked = chartState.showRange;
             showMomentsCheck.checked = chartState.showMoments;
             showVolatilityCheck.checked = chartState.showVolatility;
