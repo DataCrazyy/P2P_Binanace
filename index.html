@@ -18,7 +18,10 @@
         .feature-icon { background: #0ea5e9; color: white; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .toggle-checkbox:checked { right: 0; border-color: #3498db; }
+        /* Lógica del interruptor mejorada */
+        .toggle-label { transition: background-color 0.2s ease-in-out; }
+        .toggle-checkbox { transition: left 0.2s ease-in-out; }
+        .toggle-checkbox:checked { left: calc(100% - 1.75rem); border-color: #3498db; } /* 1.75rem es el w-7 */
         .toggle-checkbox:checked + .toggle-label { background-color: #3498db; }
     </style>
 </head>
@@ -105,12 +108,12 @@
                     <div class="flex flex-col items-center">
                         <span class="font-semibold mb-2">¿Qué quieres hacer?</span>
                         <div class="flex items-center space-x-4">
-                            <span id="label-vender" class="text-gray-500">Vender USDT</span>
-                             <div class="relative inline-block w-14 align-middle select-none transition duration-200 ease-in">
-                                 <input type="checkbox" name="trade-type-toggle" id="trade-type-toggle" class="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                            <span id="label-comprar" class="text-gray-500">Comprar USDT</span>
+                             <div class="relative inline-block w-14 align-middle select-none">
+                                 <input type="checkbox" name="trade-type-toggle" id="trade-type-toggle" class="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 appearance-none cursor-pointer left-0"/>
                                  <label for="trade-type-toggle" class="toggle-label block overflow-hidden h-7 rounded-full bg-gray-300 cursor-pointer"></label>
                              </div>
-                            <span id="label-comprar" class="font-bold text-sky-600">Comprar USDT</span>
+                            <span id="label-vender" class="font-bold text-sky-600">Vender USDT</span>
                         </div>
                     </div>
                     <div class="flex flex-col items-center">
@@ -189,14 +192,17 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-        // ❗️ REEMPLAZA ESTO CON TUS PROPIAS CREDENCIALES DE FIREBASE
+        // ⚠️ ADVERTENCIA DE SEGURIDAD: Estas claves están expuestas en el lado del cliente.
+        // Un atacante podría usarlas para interactuar con tus servicios de Firebase.
+        // Considera usar reglas de seguridad de Firestore y App Check para proteger tus recursos.
         const firebaseConfig = {
-            apiKey: "TU_API_KEY",
-            authDomain: "TU_AUTH_DOMAIN",
-            projectId: "TU_PROJECT_ID",
-            storageBucket: "TU_STORAGE_BUCKET",
-            messagingSenderId: "TU_MESSAGING_SENDER_ID",
-            appId: "TU_APP_ID"
+            apiKey: "AIzaSyAaJ4ELW_HLcjlHXDVIASrPpctWMIHYeIo",
+            authDomain: "p2p-analytics-bolivia.firebaseapp.com",
+            projectId: "p2p-analytics-bolivia",
+            storageBucket: "p2p-analytics-bolivia.firebasestorage.app",
+            messagingSenderId: "681190831507",
+            appId: "1:681190831507:web:7ce2211b0356ac5b20e466",
+            measurementId: "G-NVNVSYDJ46"
         };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -252,7 +258,7 @@
         let datepicker = null;
 
         const chartState = {
-            tradeType: 'SELL',
+            tradeType: 'SELL', // El estado inicial es Vender
             frequency: '1h',
             showRange: true,
             showMoments: true,
@@ -262,12 +268,14 @@
         function updateTradeTypeLabels() {
             const labelComprar = document.getElementById('label-comprar');
             const labelVender = document.getElementById('label-vender');
-            if (chartState.tradeType === 'SELL') {
+            
+            // Lógica corregida para que la etiqueta activa coincida con el estado
+            if (chartState.tradeType === 'BUY') {
                 labelComprar.classList.add('font-bold', 'text-sky-600');
                 labelComprar.classList.remove('text-gray-500');
                 labelVender.classList.remove('font-bold', 'text-sky-600');
                 labelVender.classList.add('text-gray-500');
-            } else {
+            } else { // 'SELL'
                 labelVender.classList.add('font-bold', 'text-sky-600');
                 labelVender.classList.remove('text-gray-500');
                 labelComprar.classList.remove('font-bold', 'text-sky-600');
@@ -368,6 +376,7 @@
                     }
                 }
                 
+                // --- OBJETO DE OPCIONES CORREGIDO Y MÁS SEGURO ---
                 const options = {
                     series: series,
                     annotations: { points: [...buyAnnotations, ...sellAnnotations], xaxis: volatilityAnnotations },
@@ -378,11 +387,31 @@
                         locales: [{ name: 'es', options: { months: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"], shortMonths: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"], days: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"], shortDays: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"], toolbar: { download: 'Descargar SVG', selection: 'Selección', selectionZoom: 'Zoom Selección', zoomIn: 'Acercar', zoomOut: 'Alejar', pan: 'Mover', reset: 'Reiniciar Zoom' }} }],
                         defaultLocale: 'es'
                     },
-                    colors: ['#0d6efd', '#28a745', '#dc3545'],
+                    colors: ['#0d6efd', '#dc3545', '#28a745'], // Ajustado para que el máximo (rojo) y mínimo (verde) coincidan con la leyenda
                     stroke: { width: [2.5, 1.5, 1.5], curve: 'smooth', dashArray: [0, 4, 4] },
                     xaxis: { type: 'datetime', labels: { datetimeUTC: false, format: 'dd MMM HH:mm' } },
-                    yaxis: { labels: { formatter: (value) => value ? value.toFixed(2) + " Bs." : '' }, title: { text: 'Precio (BOB)' }},
-                    tooltip: { x: { format: 'dd MMM yyyy - HH:mm' } }
+                    yaxis: {
+                        labels: {
+                            formatter: function (value) {
+                                if (typeof value === 'number') {
+                                    return value.toFixed(2) + " Bs.";
+                                }
+                                return '';
+                            }
+                        },
+                        title: { text: 'Precio (BOB)' }
+                    },
+                    tooltip: {
+                        x: { format: 'dd MMM yyyy - HH:mm' },
+                        y: {
+                            formatter: function (value) {
+                                if (typeof value === 'number') {
+                                    return value.toFixed(3) + " Bs.";
+                                }
+                                return "N/A";
+                            }
+                        }
+                    }
                 };
                 
                 priceChart = new ApexCharts(chartElement, options);
@@ -397,7 +426,11 @@
         }
         
         function setupEventListeners() {
-            tradeTypeToggle.addEventListener('change', () => { chartState.tradeType = tradeTypeToggle.checked ? 'SELL' : 'BUY'; updateTradeTypeLabels(); updateChart(); });
+            tradeTypeToggle.addEventListener('change', () => { 
+                chartState.tradeType = tradeTypeToggle.checked ? 'SELL' : 'BUY'; 
+                updateTradeTypeLabels(); 
+                updateChart(); 
+            });
             frequencySelect.addEventListener('change', () => { chartState.frequency = frequencySelect.value; updateChart(); });
             showRangeCheck.addEventListener('change', () => { chartState.showRange = showRangeCheck.checked; updateChart(); });
             showMomentsCheck.addEventListener('change', () => { chartState.showMoments = showMomentsCheck.checked; updateChart(); });
@@ -405,14 +438,6 @@
         }
         
         document.addEventListener('DOMContentLoaded', () => {
-            const signupForm = document.getElementById('signup-form');
-            if (signupForm) {
-                signupForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    // Lógica del formulario...
-                });
-            }
-            
             const dateRangePickerInput = document.getElementById('date-range-picker');
             const today = new Date();
             const sevenDaysAgo = new Date();
@@ -426,6 +451,8 @@
                 }
             });
             
+            // Inicialización correcta de la UI
+            tradeTypeToggle.checked = (chartState.tradeType === 'SELL'); // Sincroniza el toggle con el estado inicial
             updateTradeTypeLabels();
             fetchMarketSummary();
             setupEventListeners();
