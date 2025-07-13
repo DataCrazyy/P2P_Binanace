@@ -196,7 +196,7 @@
         // ... Lógica del formulario de registro ...
 
         // ===================================================================
-        // --- CÓDIGO CON CORRECCIÓN DEL ERROR 'APPEND' ---
+        // --- CÓDIGO FINAL CON TODAS LAS FUNCIONALIDADES ---
         // ===================================================================
         const API_URL = "https://p2p-analytics-bolivia-681190831507.us-central1.run.app";
         const chartElement = document.getElementById('priceChart');
@@ -213,11 +213,13 @@
         let priceChart = null; 
         let datepicker = null;
 
+        // Estado final con todas las propiedades activas
         const chartState = {
             tradeType: 'SELL',
             frequency: '1h',
             showRange: true,
             showMoments: true,
+            showVolatility: true, // Reactivado
         };
         
         function updateTradeTypeLabels() {
@@ -254,112 +256,130 @@
         }
 
         async function updateChart() {
-                if (!chartElement || !datepicker) return;
+            if (!chartElement || !datepicker) return;
+            
+            chartLoader.classList.remove('hidden');
+            if (priceChart) { priceChart.destroy(); }
+            chartElement.innerHTML = '';
+
+            try {
+                if (datepicker.selectedDates.length < 2) throw new Error("Por favor selecciona un rango de fechas.");
                 
-                chartLoader.classList.remove('hidden');
-                if (priceChart) { priceChart.destroy(); }
-                chartElement.innerHTML = '';
+                const startDate = datepicker.selectedDates[0].toISOString().split('T')[0];
+                const endDate = datepicker.selectedDates[1].toISOString().split('T')[0];
 
-                try {
-                    if (datepicker.selectedDates.length < 2) throw new Error("Por favor selecciona un rango de fechas.");
-                    
-                    // --- LÍNEA CORREGIDA ---
-                    // Se cambió "datepiclabes" por "datepicker.selectedDates"
-                    const startDate = datepicker.selectedDates[0].toISOString().split('T')[0];
-                    const endDate = datepicker.selectedDates[1].toISOString().split('T')[0];
+                const url = new URL(`${API_URL}/api/price-analytics`);
+                url.searchParams.append('start_date', startDate);
+                url.searchParams.append('end_date', endDate);
+                url.searchParams.append('trade_type', chartState.tradeType);
+                url.searchParams.append('frequency', chartState.frequency);
 
-                    const url = new URL(`${API_URL}/api/price-analytics`);
-                    url.searchParams.append('start_date', startDate);
-                    url.searchParams.append('end_date', endDate);
-                    url.searchParams.append('trade_type', chartState.tradeType);
-                    url.searchParams.append('frequency', chartState.frequency);
-
-                    const response = await fetch(url);
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.detail || `Error ${response.status}`);
-                    }
-                    const data = await response.json();
-                    
-                    if (!data.metrics || data.metrics.length === 0) throw new Error("No hay suficientes datos para este filtro.");
-
-                    const safeMapData = (point, valueKey) => {
-                        const value = parseFloat(point[valueKey]);
-                        const timestamp = new Date(point.timestamp).getTime();
-                        if (isNaN(value) || isNaN(timestamp)) return null;
-                        return [timestamp, value];
-                    };
-
-                    const priceSeries = { 
-                        name: 'Precio Promedio', 
-                        data: data.metrics.map(d => safeMapData(d, 'precio_promedio')).filter(p => p !== null) 
-                    };
-                    
-                    let series = [priceSeries];
-                    let chartColors = ['#0d6efd'];
-                    let strokeOptions = { width: 2.5, curve: 'smooth', dashArray: 0 };
-
-                    if (chartState.showRange) {
-                        const minPriceSeries = { name: 'Precio Mínimo', data: data.metrics.map(d => safeMapData(d, 'precio_minimo')).filter(p => p !== null) };
-                        const maxPriceSeries = { name: 'Precio Máximo', data: data.metrics.map(d => safeMapData(d, 'precio_maximo')).filter(p => p !== null) };
-                        
-                        series.push(maxPriceSeries, minPriceSeries);
-                        chartColors = ['#0d6efd', '#dc3545', '#28a745'];
-                        strokeOptions.width = [2.5, 1.5, 1.5];
-                        strokeOptions.dashArray = [0, 4, 4];
-                    }
-
-                    let pointAnnotations = [];
-                    if (chartState.showMoments) {
-                        const buyAnnotations = data.buy_moments
-                            .map(d => ({
-                                x: new Date(d.timestamp).getTime(),
-                                y: parseFloat(d.precio_promedio),
-                                marker: { size: 5, fillColor: '#198754', strokeColor: '#fff', radius: 2 },
-                                label: { text: 'Comprar', borderColor: '#198754', style: { color: '#fff', background: '#198754', fontSize: '10px' } }
-                            }));
-
-                        const sellAnnotations = data.sell_moments
-                            .map(d => ({
-                                x: new Date(d.timestamp).getTime(),
-                                y: parseFloat(d.precio_promedio),
-                                marker: { size: 5, fillColor: '#dc3545', strokeColor: '#fff', radius: 2 },
-                                label: { text: 'Vender', borderColor: '#dc3545', style: { color: '#fff', background: '#dc3545', fontSize: '10px' } }
-                            }));
-                        
-                        pointAnnotations = [...buyAnnotations, ...sellAnnotations];
-                    }
-
-                    const options = {
-                        series: series,
-                        annotations: {
-                            points: pointAnnotations
-                        },
-                        chart: { type: 'line', height: 450, toolbar: { show: true }, zoom: { enabled: true } },
-                        colors: chartColors,
-                        stroke: strokeOptions,
-                        xaxis: { type: 'datetime', labels: { datetimeUTC: false } },
-                        yaxis: {
-                            title: { text: 'Precio (BOB)' },
-                            labels: {
-                                formatter: function (val) {
-                                    try { return val.toFixed(2) + " Bs."; } catch (e) { return ''; }
-                                }
-                            }
-                        },
-                        tooltip: { x: { format: 'dd MMM yyyy - HH:mm' } }
-                    };
-                    
-                    priceChart = new ApexCharts(chartElement, options);
-                    priceChart.render();
-
-                } catch (error) {
-                    chartElement.innerHTML = `<div class="flex items-center justify-center h-full text-center text-red-600 p-4 font-semibold">${error.message}</div>`;
-                    console.error("No se pudo cargar el gráfico:", error);
-                } finally {
-                    chartLoader.classList.add('hidden');
+                const response = await fetch(url);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `Error ${response.status}`);
                 }
-            }        
+                const data = await response.json();
+                
+                if (!data.metrics || data.metrics.length === 0) throw new Error("No hay suficientes datos para este filtro.");
+
+                const safeMapData = (point, valueKey) => {
+                    const value = parseFloat(point[valueKey]);
+                    const timestamp = new Date(point.timestamp).getTime();
+                    if (isNaN(value) || isNaN(timestamp)) return null;
+                    return [timestamp, value];
+                };
+
+                const priceSeries = { 
+                    name: 'Precio Promedio', 
+                    data: data.metrics.map(d => safeMapData(d, 'precio_promedio')).filter(p => p !== null) 
+                };
+                
+                let series = [priceSeries];
+                let chartColors = ['#0d6efd'];
+                let strokeOptions = { width: 2.5, curve: 'smooth', dashArray: 0 };
+
+                if (chartState.showRange) {
+                    const minPriceSeries = { name: 'Precio Mínimo', data: data.metrics.map(d => safeMapData(d, 'precio_minimo')).filter(p => p !== null) };
+                    const maxPriceSeries = { name: 'Precio Máximo', data: data.metrics.map(d => safeMapData(d, 'precio_maximo')).filter(p => p !== null) };
+                    
+                    series.push(maxPriceSeries, minPriceSeries);
+                    chartColors = ['#0d6efd', '#dc3545', '#28a745'];
+                    strokeOptions.width = [2.5, 1.5, 1.5];
+                    strokeOptions.dashArray = [0, 4, 4];
+                }
+
+                let pointAnnotations = [];
+                if (chartState.showMoments) {
+                    const buyAnnotations = data.buy_moments
+                        .map(d => ({
+                            x: new Date(d.timestamp).getTime(),
+                            y: parseFloat(d.precio_promedio),
+                            marker: { size: 5, fillColor: '#198754', strokeColor: '#fff', radius: 2 },
+                            label: { text: 'Comprar', borderColor: '#198754', style: { color: '#fff', background: '#198754', fontSize: '10px' } }
+                        }));
+                    const sellAnnotations = data.sell_moments
+                        .map(d => ({
+                            x: new Date(d.timestamp).getTime(),
+                            y: parseFloat(d.precio_promedio),
+                            marker: { size: 5, fillColor: '#dc3545', strokeColor: '#fff', radius: 2 },
+                            label: { text: 'Vender', borderColor: '#dc3545', style: { color: '#fff', background: '#dc3545', fontSize: '10px' } }
+                        }));
+                    pointAnnotations = [...buyAnnotations, ...sellAnnotations];
+                }
+
+                // --- LÓGICA DE VOLATILIDAD REACTIVADA ---
+                let volatilityAnnotations = [];
+                if (chartState.showVolatility && data.metrics.length > 1) {
+                    const volThreshold = data.volatility_threshold;
+                    for (let i = 0; i < data.metrics.length - 1; i++) {
+                        const currentPoint = data.metrics[i];
+                        const nextPoint = data.metrics[i+1];
+                        // Asegurarse que la volatilidad existe para este punto
+                        if (currentPoint.volatilidad != null) {
+                            volatilityAnnotations.push({
+                                x: new Date(currentPoint.timestamp).getTime(),
+                                x2: new Date(nextPoint.timestamp).getTime(),
+                                fillColor: currentPoint.volatilidad <= volThreshold ? 'rgba(54, 162, 235, 0.2)' : 'rgba(255, 159, 64, 0.2)',
+                                label: { text: '' }
+                            });
+                        }
+                    }
+                }
+
+                const options = {
+                    series: series,
+                    // Objeto de anotaciones final con puntos y zonas del eje X
+                    annotations: {
+                        points: pointAnnotations,
+                        xaxis: volatilityAnnotations
+                    },
+                    chart: { type: 'line', height: 450, toolbar: { show: true }, zoom: { enabled: true } },
+                    colors: chartColors,
+                    stroke: strokeOptions,
+                    xaxis: { type: 'datetime', labels: { datetimeUTC: false } },
+                    yaxis: {
+                        title: { text: 'Precio (BOB)' },
+                        labels: {
+                            formatter: function (val) {
+                                try { return val.toFixed(2) + " Bs."; } catch (e) { return ''; }
+                            }
+                        }
+                    },
+                    tooltip: { x: { format: 'dd MMM yyyy - HH:mm' } }
+                };
+                
+                priceChart = new ApexCharts(chartElement, options);
+                priceChart.render();
+
+            } catch (error) {
+                chartElement.innerHTML = `<div class="flex items-center justify-center h-full text-center text-red-600 p-4 font-semibold">${error.message}</div>`;
+                console.error("No se pudo cargar el gráfico:", error);
+            } finally {
+                chartLoader.classList.add('hidden');
+            }
+        }
+        
         function setupEventListeners() {
             tradeTypeToggle.addEventListener('change', () => { 
                 chartState.tradeType = tradeTypeToggle.checked ? 'SELL' : 'BUY'; 
@@ -381,7 +401,11 @@
                 updateChart();
             });
             
-            showVolatilityCheck.addEventListener('change', () => console.log("Volatilidad cambiado. Funcionalidad desactivada temporalmente."));
+            // Listener para "Volatilidad" reactivado
+            showVolatilityCheck.addEventListener('change', () => {
+                chartState.showVolatility = showVolatilityCheck.checked;
+                updateChart();
+            });
         }
         
         document.addEventListener('DOMContentLoaded', () => {
@@ -400,8 +424,11 @@
                 }
             });
             
+            // Sincroniza todos los checkboxes con el estado inicial
             showRangeCheck.checked = chartState.showRange;
             showMomentsCheck.checked = chartState.showMoments;
+            showVolatilityCheck.checked = chartState.showVolatility;
+
             updateTradeTypeLabels();
             fetchMarketSummary();
             setInterval(fetchMarketSummary, 60000); 
