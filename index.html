@@ -329,7 +329,10 @@
                 }
                 const data = await response.json();
                 console.log("DATA ANALYTICS", data); // <--- AÑADE ESTO
-
+                console.log("Series final:", series);
+                console.log("Annotations:", [...buyAnnotations, ...sellAnnotations]);
+                console.log("Volatility Areas:", volatilityAnnotations);
+                
                 if (!data.metrics || data.metrics.length === 0) { throw new Error("No hay suficientes datos para este filtro."); }
 
 // index.html -> dentro de la etiqueta <script>
@@ -345,6 +348,7 @@
 
                     // 2. Validar que el timestamp sea un número y el valor no sea nulo/indefinido
                     if (isNaN(timestamp) || value === null || typeof value === 'undefined') {
+                        console.warn("Dato inválido:", point, valueKey);
                         return null; 
                     }
 
