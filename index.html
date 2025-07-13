@@ -321,44 +321,22 @@
                 url.searchParams.append('trade_type', chartState.tradeType);
                 url.searchParams.append('frequency', chartState.frequency);
 
-                
                 const response = await fetch(url);
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.detail || `Error ${response.status}`);
                 }
                 const data = await response.json();
-                console.log("DATA ANALYTICS", data); // <--- AÑADE ESTO
-                console.log("Series final:", series);
-                console.log("Annotations:", [...buyAnnotations, ...sellAnnotations]);
-                console.log("Volatility Areas:", volatilityAnnotations);
                 
                 if (!data.metrics || data.metrics.length === 0) { throw new Error("No hay suficientes datos para este filtro."); }
 
-// index.html -> dentro de la etiqueta <script>
-
-                // REEMPLAZA ESTA FUNCIÓN COMPLETA
                 const safeMapData = (point, valueKey) => {
-                    // 1. Validar que el punto y su timestamp existan
-                    if (!point || !point.timestamp) {
-                        return null;
-                    }
+                    if (!point || !point.timestamp) { return null; }
                     const timestamp = new Date(point.timestamp).getTime();
                     const value = point[valueKey];
-
-                    // 2. Validar que el timestamp sea un número y el valor no sea nulo/indefinido
-                    if (isNaN(timestamp) || value === null || typeof value === 'undefined') {
-                        console.warn("Dato inválido:", point, valueKey);
-                        return null; 
-                    }
-
-                    // 3. Convertir el valor a número y validar que no sea NaN (Not-a-Number)
+                    if (isNaN(timestamp) || value === null || typeof value === 'undefined') { return null; }
                     const numericValue = parseFloat(value);
-                    if (isNaN(numericValue)) {
-                        return null;
-                    }
-
-                    // 4. Devolver el punto de datos válido
+                    if (isNaN(numericValue)) { return null; }
                     return [timestamp, numericValue];
                 };
 
@@ -404,6 +382,11 @@
                     }
                 }
                 
+                // ✅ CONSOLE.LOGS MOVIDOS A UN LUGAR SEGURO
+                console.log("Datos recibidos de la API:", data);
+                console.log("Series procesadas para la gráfica:", series);
+                console.log("Anotaciones de Compra/Venta:", [...buyAnnotations, ...sellAnnotations]);
+
                 const options = {
                     series: series,
                     annotations: { points: [...buyAnnotations, ...sellAnnotations], xaxis: volatilityAnnotations },
@@ -465,38 +448,35 @@
         }
         
         document.addEventListener('DOMContentLoaded', () => {
-            const dateRangePickerInput = document.getElementById('date-range-picker');
             const today = new Date();
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(today.getDate() - 7);
 
+            // Inicializar el selector de fecha
             datepicker = flatpickr(dateRangePickerInput, {
-                mode: "range", dateFormat: "Y-m-d", defaultDate: [sevenDaysAgo, today],
-                maxDate: today, locale: "es",
+                mode: "range", 
+                dateFormat: "Y-m-d", 
+                defaultDate: [sevenDaysAgo, today],
+                maxDate: today, 
+                locale: "es",
                 onClose: (selectedDates) => {
                     if (selectedDates.length === 2) updateChart();
                 }
             });
             
+            // Configurar estado inicial de los controles
             tradeTypeToggle.checked = (chartState.tradeType === 'SELL');
             updateTradeTypeLabels();
 
-            // ✅ SOLUCIÓN: Carga inicial y luego actualiza periódicamente
-            fetchMarketSummary(); // Carga los datos la primera vez
-            setInterval(fetchMarketSummary, 60000); // Actualiza cada 60 segundos (60000 ms)
+            // Cargar resumen de mercado y establecer actualización periódica
+            fetchMarketSummary();
+            setInterval(fetchMarketSummary, 60000); 
             
+            // Configurar los listeners para los controles del gráfico
             setupEventListeners();
-                        
-            setTimeout(() => {
-                if (datepicker && datepicker.selectedDates.length === 2) {
-                    updateChart();
-                } else {
-                    const dates = datepicker.selectedDates;
-                    if (!dates || dates.length < 2) {
-                        console.warn("No se seleccionó un rango válido por defecto.");
-                    }
-                }
-            }, 500);
+            
+            // ✅ CARGA INICIAL DE LA GRÁFICA (sin setTimeout)
+            updateChart();
         });
     </script>
 </body>
