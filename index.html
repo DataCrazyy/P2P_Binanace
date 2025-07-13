@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script> 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
@@ -99,9 +100,9 @@
                         <div class="flex items-center space-x-4">
                             <span id="label-vender" class="text-gray-500">Vender USDT</span>
                              <div class="relative inline-block w-14 align-middle select-none transition duration-200 ease-in">
-                                <input type="checkbox" name="trade-type-toggle" id="trade-type-toggle" class="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
-                                <label for="trade-type-toggle" class="toggle-label block overflow-hidden h-7 rounded-full bg-gray-300 cursor-pointer"></label>
-                            </div>
+                                 <input type="checkbox" name="trade-type-toggle" id="trade-type-toggle" class="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                                 <label for="trade-type-toggle" class="toggle-label block overflow-hidden h-7 rounded-full bg-gray-300 cursor-pointer"></label>
+                             </div>
                             <span id="label-comprar" class="font-bold text-sky-600">Comprar USDT</span>
                         </div>
                     </div>
@@ -139,7 +140,7 @@
                     <h4 class="font-bold text-lg mb-2">💡 ¿Qué significan los puntos y zonas en el gráfico?</h4>
                     <ul class="list-disc list-inside space-y-1">
                         <li><strong class="text-green-600">Círculos Verdes (🟢):</strong> Muestran los precios históricamente más bajos del período. Buenos momentos para <strong>comprar</strong>.</li>
-                        <li><strong class="text-red-600">Cruces Rojas (🔴):</strong> Muestran los precios históricamente más altos del período. Buenos momentos para <strong>vender</strong>.</li>
+                        <li><strong class="text-red-600">Círculos Rojos (🔴):</strong> Muestran los precios históricamente más altos del período. Buenos momentos para <strong>vender</strong>.</li>
                         <li><strong class="text-blue-500">Zonas Azules (Calma):</strong> Períodos en los que el precio estuvo más estable.</li>
                         <li><strong class="text-orange-500">Zonas Naranjas (Agitadas):</strong> Períodos en los que el precio cambió bruscamente.</li>
                     </ul>
@@ -150,10 +151,10 @@
     </section>
     
     <section id="register" class="bg-sky-600 text-white">
-        </section>
+      </section>
 
     <footer class="bg-gray-800 text-white">
-        </footer>
+       </footer>
 
     <script type="module">
         // --- SECCIÓN DE FIREBASE ---
@@ -165,6 +166,7 @@
         const chartCanvas = document.getElementById('priceChart');
         const chartLoader = document.getElementById('chart-loader');
         
+        // Controles
         const tradeTypeToggle = document.getElementById('trade-type-toggle');
         const frequencySelect = document.getElementById('frequency-select');
         const showTrendCheck = document.getElementById('show-trend');
@@ -182,21 +184,21 @@
             showMoments: true,
             showVolatility: true,
         };
-
+        
+        // Funciones de UI y fetch (sin cambios en la lógica)
         function updateTradeTypeLabels() {
-            if (chartState.tradeType === 'SELL') {
+            if (chartState.tradeType === 'SELL') { // Usuario quiere comprar USDT
                 labelComprar.classList.add('font-bold', 'text-sky-600');
                 labelComprar.classList.remove('text-gray-500');
                 labelVender.classList.remove('font-bold', 'text-sky-600');
                 labelVender.classList.add('text-gray-500');
-            } else {
+            } else { // Usuario quiere vender USDT
                 labelVender.classList.add('font-bold', 'text-sky-600');
                 labelVender.classList.remove('text-gray-500');
                 labelComprar.classList.remove('font-bold', 'text-sky-600');
                 labelComprar.classList.add('text-gray-500');
             }
         }
-
         async function fetchMarketSummary() {
             try {
                 const response = await fetch(`${API_URL}/api/market-summary`);
@@ -234,44 +236,30 @@
                 }
 
                 const labels = data.metrics.map(d => new Date(d.timestamp));
-                const prices = data.metrics.map(d => d.precio_promedio);
+                const pricesData = data.metrics.map(d => ({
+                    x: new Date(d.timestamp),
+                    y: d.precio_promedio,
+                    min: d.precio_minimo,
+                    max: d.precio_maximo
+                }));
                 
                 const datasets = [];
 
                 // 1. Zonas de Volatilidad
                 if(chartState.showVolatility) {
-                    const volThreshold = data.volatility_threshold;
-                    const calmPrices = data.metrics.map(d => d.volatilidad <= volThreshold ? d.precio_promedio : null);
-                    const agitatedPrices = data.metrics.map(d => d.volatilidad > volThreshold ? d.precio_promedio : null);
-
-                    datasets.push({
-                        label: 'Zona Calma',
-                        data: calmPrices,
-                        fill: 'start',
-                        backgroundColor: 'rgba(54, 162, 235, 0.08)', 
-                        borderColor: 'transparent',
-                        pointRadius: 0,
-                        order: 4
-                    });
-                    datasets.push({
-                        label: 'Zona Agitada',
-                        data: agitatedPrices,
-                        fill: 'start',
-                        backgroundColor: 'rgba(255, 159, 64, 0.15)',
-                        borderColor: 'transparent',
-                        pointRadius: 0,
-                        order: 3
-                    });
+                     const volThreshold = data.volatility_threshold;
+                     const calmPrices = data.metrics.map(d => d.volatilidad <= volThreshold ? d.precio_promedio : null);
+                     const agitatedPrices = data.metrics.map(d => d.volatilidad > volThreshold ? d.precio_promedio : null);
+                     datasets.push({ label: 'Zona Calma', data: calmPrices, fill: 'start', backgroundColor: 'rgba(54, 162, 235, 0.08)', borderColor: 'transparent', pointRadius: 0, order: 4 });
+                     datasets.push({ label: 'Zona Agitada', data: agitatedPrices, fill: 'start', backgroundColor: 'rgba(255, 159, 64, 0.15)', borderColor: 'transparent', pointRadius: 0, order: 3 });
                 }
                 
                 // 2. Línea de Precio Principal
-                // --- CAMBIO DE COLOR: La vista 'Comprar' ahora es azul ---
-                const mainColor = chartState.tradeType === 'SELL' ? '#0d6efd' : '#198754'; // Azul para comprar, Verde para vender
                 datasets.push({
                     type: 'line',
                     label: 'Precio Promedio',
-                    data: prices,
-                    borderColor: mainColor,
+                    data: pricesData,
+                    borderColor: '#0d6efd', // Color azul fijo
                     backgroundColor: 'transparent',
                     tension: 0.1,
                     borderWidth: 2.5,
@@ -281,17 +269,7 @@
                 // 3. Línea de Tendencia
                 if(chartState.showTrend) {
                     const trendData = data.metrics.map(d => d.tendencia);
-                    datasets.push({
-                        type: 'line',
-                        label: 'Tendencia',
-                        data: trendData,
-                        borderColor: '#6c757d', // Gris oscuro y neutro
-                        borderDash: [6, 3],
-                        fill: false,
-                        pointRadius: 0,
-                        borderWidth: 2,
-                        order: 1
-                    });
+                    datasets.push({ type: 'line', label: 'Tendencia', data: trendData, borderColor: '#6c757d', borderDash: [6, 3], fill: false, pointRadius: 0, borderWidth: 2, order: 1 });
                 }
 
                 // 4. Marcadores de Momentos Óptimos
@@ -310,6 +288,7 @@
                         pointStyle: 'circle',
                         order: 0,
                     });
+
                     datasets.push({
                         type: 'scatter',
                         label: 'Buen Momento para Vender (Hist.)',
@@ -318,7 +297,7 @@
                         borderColor: '#FFFFFF',
                         radius: 7,
                         borderWidth: 2,
-                        pointStyle: 'crossRot',
+                        pointStyle: 'circle', // Estilo de punto cambiado a círculo
                         order: 0,
                     });
                 }
@@ -345,21 +324,47 @@
                         plugins: {
                             legend: { 
                                 position: 'top',
-                                labels: {
-                                    filter: function(legendItem) { return !legendItem.text.includes('Zona'); }
-                                }
+                                labels: { filter: function(legendItem) { return !legendItem.text.includes('Zona'); } }
                             },
                             tooltip: {
                                 mode: 'index',
                                 intersect: false,
                                 callbacks: {
+                                    title: function(tooltipItems) {
+                                        const date = new Date(tooltipItems[0].parsed.x);
+                                        return date.toLocaleString('es-BO', { dateStyle: 'medium', timeStyle: 'short' });
+                                    },
                                     label: function(context) {
                                         const label = context.dataset.label || '';
-                                        if (!label) return null;
+                                        if (!label || context.raw === null) return null;
+
+                                        if (label === 'Precio Promedio') {
+                                            const point = context.raw;
+                                            return [
+                                                `Promedio: ${point.y.toFixed(3)} Bs.`,
+                                                `Máximo: ${point.max.toFixed(3)} Bs.`,
+                                                `Mínimo: ${point.min.toFixed(3)} Bs.`
+                                            ];
+                                        }
+                                        
                                         const value = context.parsed.y;
-                                        if (value === null) return null;
                                         return `${label}: ${value.toFixed(3)} Bs.`;
                                     }
+                                }
+                            },
+                            zoom: {
+                                pan: {
+                                    enabled: true,
+                                    mode: 'x',
+                                },
+                                zoom: {
+                                    wheel: {
+                                        enabled: true,
+                                    },
+                                    pinch: {
+                                        enabled: true
+                                    },
+                                    mode: 'x',
                                 }
                             }
                         }
@@ -381,8 +386,6 @@
         
         // --- Event Listeners para los controles ---
         tradeTypeToggle.addEventListener('change', (event) => {
-            // Invertimos la lógica para que coincida con lo que el usuario ve
-            // Si el toggle está a la derecha ('Comprar USDT'), queremos el tipo de anuncio 'SELL'
             chartState.tradeType = event.target.checked ? 'SELL' : 'BUY';
             updateTradeTypeLabels();
             updateChart();
@@ -394,7 +397,7 @@
         showTrendCheck.addEventListener('change', (event) => {
             chartState.showTrend = event.target.checked;
             updateChart();
-});
+        });
         showMomentsCheck.addEventListener('change', (event) => {
             chartState.showMoments = event.target.checked;
             updateChart();
@@ -406,14 +409,13 @@
 
         // --- Carga Inicial ---
         document.addEventListener('DOMContentLoaded', () => {
-            updateTradeTypeLabels();
-            // El toggle inicia en 'Comprar USDT' (activado)
             tradeTypeToggle.checked = true;
+            updateTradeTypeLabels();
             fetchMarketSummary();
             if (chartCanvas) {
                 updateChart();
             }
         });
     </script>
-</body>
+     </body>
 </html>
