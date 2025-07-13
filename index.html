@@ -18,10 +18,9 @@
         .feature-icon { background: #0ea5e9; color: white; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* Lógica del interruptor mejorada */
         .toggle-label { transition: background-color 0.2s ease-in-out; }
         .toggle-checkbox { transition: left 0.2s ease-in-out; }
-        .toggle-checkbox:checked { left: calc(100% - 1.75rem); border-color: #3498db; } /* 1.75rem es el w-7 */
+        .toggle-checkbox:checked { left: calc(100% - 1.75rem); border-color: #3498db; }
         .toggle-checkbox:checked + .toggle-label { background-color: #3498db; }
     </style>
 </head>
@@ -105,22 +104,22 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6 items-center bg-gray-100 p-4 rounded-lg">
-                    <div class="flex flex-col items-center">
+                    <div class="flex flex-col items-center justify-center">
                         <span class="font-semibold mb-2">¿Qué quieres hacer?</span>
                         <div class="flex items-center space-x-4">
-                            <span id="label-comprar" class="text-gray-500">Comprar USDT</span>
+                            <span id="label-comprar" class="text-gray-500">Comprar</span>
                              <div class="relative inline-block w-14 align-middle select-none">
                                  <input type="checkbox" name="trade-type-toggle" id="trade-type-toggle" class="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 appearance-none cursor-pointer left-0"/>
                                  <label for="trade-type-toggle" class="toggle-label block overflow-hidden h-7 rounded-full bg-gray-300 cursor-pointer"></label>
                              </div>
-                            <span id="label-vender" class="font-bold text-sky-600">Vender USDT</span>
+                            <span id="label-vender" class="font-bold text-sky-600">Vender</span>
                         </div>
                     </div>
-                    <div class="flex flex-col items-center">
+                    <div class="flex flex-col items-center justify-center">
                         <label for="date-range-picker" class="font-semibold mb-2">Seleccionar Rango</label>
                         <input id="date-range-picker" class="w-full max-w-xs px-4 py-2 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-500 rounded-md text-center" placeholder="Elige un rango de fechas">
                     </div>
-                    <div class="flex flex-col items-center">
+                    <div class="flex flex-col items-center justify-center">
                         <label for="frequency-select" class="font-semibold mb-2">Agrupar datos por:</label>
                         <select id="frequency-select" class="w-full max-w-xs px-4 py-2 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-500 rounded-md">
                             <option value="5T">5 Minutos</option>
@@ -131,10 +130,10 @@
                             <option value="1d">1 Día</option>
                         </select>
                     </div>
-                    <div class="flex flex-col items-center">
+                    <div class="flex flex-col items-center justify-center">
                         <span class="font-semibold mb-2">Opciones del Gráfico</span>
                         <div class="flex space-x-4">
-                            <label class="flex items-center cursor-pointer"><input type="checkbox" id="show-range" class="mr-2" checked>Rango (Mín/Máx)</label>
+                            <label class="flex items-center cursor-pointer"><input type="checkbox" id="show-range" class="mr-2" checked>Rango</label>
                             <label class="flex items-center cursor-pointer"><input type="checkbox" id="show-moments" class="mr-2" checked>Momentos</label>
                             <label class="flex items-center cursor-pointer"><input type="checkbox" id="show-volatility" class="mr-2" checked>Volatilidad</label>
                         </div>
@@ -192,8 +191,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-        // ⚠️ ADVERTENCIA DE SEGURIDAD: Estas claves están expuestas en el lado del cliente.
-        // Para un proyecto real, protege estas claves con reglas de seguridad y App Check.
         const firebaseConfig = {
             apiKey: "AIzaSyAaJ4ELW_HLcjlHXDVIASrPpctWMIHYeIo",
             authDomain: "p2p-analytics-bolivia.firebaseapp.com",
@@ -257,7 +254,7 @@
         let datepicker = null;
 
         const chartState = {
-            tradeType: 'SELL', // El estado inicial es Vender
+            tradeType: 'SELL',
             frequency: '1h',
             showRange: true,
             showMoments: true,
@@ -332,24 +329,36 @@
 
                 if (!data.metrics || data.metrics.length === 0) { throw new Error("No hay suficientes datos para este filtro."); }
 
-                const priceSeries = { name: 'Precio Promedio', data: data.metrics.map(d => [new Date(d.timestamp).getTime(), d.precio_promedio]) };
-                const minPriceSeries = { name: 'Precio Mínimo', data: data.metrics.map(d => [new Date(d.timestamp).getTime(), d.precio_minimo]) };
-                const maxPriceSeries = { name: 'Precio Máximo', data: data.metrics.map(d => [new Date(d.timestamp).getTime(), d.precio_maximo]) };
+                // **MODIFICACIÓN CLAVE: Función para mapear datos de forma segura**
+                const safeMapData = (point, valueKey) => {
+                    const timestamp = new Date(point.timestamp).getTime();
+                    // Si el timestamp no es un número válido, o el valor es nulo/indefinido, el punto no es válido
+                    if (isNaN(timestamp) || point[valueKey] == null) {
+                        return null; 
+                    }
+                    return [timestamp, point[valueKey]];
+                };
+
+                // **MODIFICACIÓN CLAVE: Filtrar puntos nulos después de mapear**
+                const priceSeries = { name: 'Precio Promedio', data: data.metrics.map(d => safeMapData(d, 'precio_promedio')).filter(p => p !== null) };
+                const minPriceSeries = { name: 'Precio Mínimo', data: data.metrics.map(d => safeMapData(d, 'precio_minimo')).filter(p => p !== null) };
+                const maxPriceSeries = { name: 'Precio Máximo', data: data.metrics.map(d => safeMapData(d, 'precio_maximo')).filter(p => p !== null) };
                 
                 let series = [priceSeries];
                 if (chartState.showRange) {
                     series.push(maxPriceSeries, minPriceSeries);
                 }
                 
+                // **MODIFICACIÓN CLAVE: Usar != null para filtrar tanto null como undefined**
                 const buyAnnotations = chartState.showMoments ? data.buy_moments
-                    .filter(d => d.precio_promedio !== null)
+                    .filter(d => d.precio_promedio != null)
                     .map(d => ({
                         x: new Date(d.timestamp).getTime(), y: d.precio_promedio,
                         marker: { size: 5, fillColor: '#198754', strokeColor: '#fff', radius: 2, shape: 'circle' },
                         label: { text: 'Compra', borderColor: '#198754', style: { color: '#fff', background: '#198754', fontSize: '10px', padding: {left: 4, right: 4, top: 2, bottom: 2} } }
                     })) : [];
                 const sellAnnotations = chartState.showMoments ? data.sell_moments
-                    .filter(d => d.precio_promedio !== null)
+                    .filter(d => d.precio_promedio != null)
                     .map(d => ({
                         x: new Date(d.timestamp).getTime(), y: d.precio_promedio,
                         marker: { size: 5, fillColor: '#dc3545', strokeColor: '#fff', radius: 2, shape: 'circle' },
@@ -363,7 +372,7 @@
                         const currentPoint = data.metrics[i];
                         const nextPoint = data.metrics[i+1];
                         
-                        if (currentPoint.volatilidad !== null && currentPoint.precio_promedio !== null) {
+                        if (currentPoint.volatilidad != null && currentPoint.precio_promedio != null) {
                             volatilityAnnotations.push({
                                 x: new Date(currentPoint.timestamp).getTime(),
                                 x2: new Date(nextPoint.timestamp).getTime(),
