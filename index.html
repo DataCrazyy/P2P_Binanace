@@ -113,12 +113,10 @@
                             <span id="label-comprar" class="font-bold text-sky-600">Comprar USDT</span>
                         </div>
                     </div>
-
                     <div class="flex flex-col items-center">
                         <label for="date-range-picker" class="font-semibold mb-2">Seleccionar Rango</label>
                         <input id="date-range-picker" class="w-full max-w-xs px-4 py-2 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-500 rounded-md text-center" placeholder="Elige un rango de fechas">
                     </div>
-
                     <div class="flex flex-col items-center">
                         <label for="frequency-select" class="font-semibold mb-2">Agrupar datos por:</label>
                         <select id="frequency-select" class="w-full max-w-xs px-4 py-2 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-500 rounded-md">
@@ -130,7 +128,6 @@
                             <option value="1d">1 Día</option>
                         </select>
                     </div>
-                    
                     <div class="flex flex-col items-center">
                         <span class="font-semibold mb-2">Opciones del Gráfico</span>
                         <div class="flex space-x-4">
@@ -206,10 +203,36 @@
 
         // Lógica del formulario de registro
         const signupForm = document.getElementById('signup-form');
+        const signupMessage = document.getElementById('signup-message');
         if (signupForm) {
             signupForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                // ... (toda la lógica del formulario se mantiene igual)
+                const nameInput = document.getElementById('name');
+                const emailInput = document.getElementById('email');
+                const name = nameInput.value.trim();
+                const email = emailInput.value.trim();
+
+                if (name && email) {
+                    const submitButton = signupForm.querySelector('button');
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Registrando...';
+                    try {
+                        await addDoc(collection(db, "early_access_registrations"), { name: name, email: email, timestamp: new Date() });
+                        signupMessage.textContent = "¡Gracias por registrarte! Te avisaremos pronto.";
+                        signupMessage.className = "mt-4 text-sm font-medium h-5 text-green-300";
+                        signupForm.reset();
+                    } catch (error) {
+                        console.error("Error al añadir documento: ", error);
+                        signupMessage.textContent = "Error en el registro. Revisa las reglas de Firebase.";
+                        signupMessage.className = "mt-4 text-sm font-medium h-5 text-red-300";
+                    } finally {
+                        submitButton.disabled = false;
+                        submitButton.textContent = '¡Registrarme!';
+                    }
+                } else {
+                    signupMessage.textContent = "Por favor, completa ambos campos.";
+                    signupMessage.className = "mt-4 text-sm font-medium h-5 text-yellow-300";
+                }
             });
         }
         
@@ -218,7 +241,6 @@
         const chartElement = document.getElementById('priceChart');
         const chartLoader = document.getElementById('chart-loader');
         
-        // --- Controles ---
         const tradeTypeToggle = document.getElementById('trade-type-toggle');
         const frequencySelect = document.getElementById('frequency-select');
         const dateRangePickerInput = document.getElementById('date-range-picker');
@@ -313,36 +335,40 @@
                     series.push(maxPriceSeries, minPriceSeries);
                 }
                 
-                const buyAnnotations = chartState.showMoments ? data.buy_moments.map(d => ({
-                    x: new Date(d.timestamp).getTime(), y: d.precio_promedio,
-                    marker: { size: 5, fillColor: '#198754', strokeColor: '#fff', radius: 2, shape: 'circle' },
-                    label: { text: 'Compra', borderColor: '#198754', style: { color: '#fff', background: '#198754', fontSize: '10px', padding: {left: 4, right: 4, top: 2, bottom: 2} } }
-                })) : [];
-                const sellAnnotations = chartState.showMoments ? data.sell_moments.map(d => ({
-                    x: new Date(d.timestamp).getTime(), y: d.precio_promedio,
-                    marker: { size: 5, fillColor: '#dc3545', strokeColor: '#fff', radius: 2, shape: 'circle' },
-                    label: { text: 'Venta', borderColor: '#dc3545', style: { color: '#fff', background: '#dc3545', fontSize: '10px', padding: {left: 4, right: 4, top: 2, bottom: 2} } }
-                })) : [];
+                const buyAnnotations = chartState.showMoments ? data.buy_moments
+                    .filter(d => d.precio_promedio !== null)
+                    .map(d => ({
+                        x: new Date(d.timestamp).getTime(), y: d.precio_promedio,
+                        marker: { size: 5, fillColor: '#198754', strokeColor: '#fff', radius: 2, shape: 'circle' },
+                        label: { text: 'Compra', borderColor: '#198754', style: { color: '#fff', background: '#198754', fontSize: '10px', padding: {left: 4, right: 4, top: 2, bottom: 2} } }
+                    })) : [];
+                const sellAnnotations = chartState.showMoments ? data.sell_moments
+                    .filter(d => d.precio_promedio !== null)
+                    .map(d => ({
+                        x: new Date(d.timestamp).getTime(), y: d.precio_promedio,
+                        marker: { size: 5, fillColor: '#dc3545', strokeColor: '#fff', radius: 2, shape: 'circle' },
+                        label: { text: 'Venta', borderColor: '#dc3545', style: { color: '#fff', background: '#dc3545', fontSize: '10px', padding: {left: 4, right: 4, top: 2, bottom: 2} } }
+                    })) : [];
                 
                 const volThreshold = data.volatility_threshold;
-                const calmAnnotations = chartState.showVolatility ? data.metrics.map((d, i, arr) => ({
-                    x: new Date(d.timestamp).getTime(),
-                    x2: i + 1 < arr.length ? new Date(arr[i+1].timestamp).getTime() : new Date(d.timestamp).getTime() + 1,
-                    fillColor: d.volatilidad <= volThreshold ? 'rgba(54, 162, 235, 0.25)' : 'rgba(255, 159, 64, 0.25)',
-                    label: { text: '' }
-                })) : [];
+                const volatilityAnnotations = chartState.showVolatility ? data.metrics
+                    .filter(d => d.precio_promedio !== null && d.volatilidad !== null)
+                    .map((d, i, arr) => {
+                        // Aseguramos que el siguiente punto exista y tenga datos para dibujar el rango
+                        const nextPoint = arr[i + 1];
+                        const x2 = nextPoint ? new Date(nextPoint.timestamp).getTime() : new Date(d.timestamp).getTime() + 1;
+                        const fillColor = d.volatilidad <= volThreshold ? 'rgba(54, 162, 235, 0.25)' : 'rgba(255, 159, 64, 0.25)';
+                        return { x: new Date(d.timestamp).getTime(), x2: x2, fillColor: fillColor, label: { text: '' } };
+                    }) : [];
                 
                 const options = {
                     series: series,
-                    annotations: { points: [...buyAnnotations, ...sellAnnotations], xaxis: calmAnnotations },
+                    annotations: { points: [...buyAnnotations, ...sellAnnotations], xaxis: volatilityAnnotations },
                     chart: {
                         type: 'line', height: 450, id: 'priceChartWithBrush',
                         toolbar: { autoSelected: 'zoom', show: true },
                         brush: { enabled: true, autoScaleYaxis: false },
-                        locales: [{
-                            name: 'es',
-                            options: { months: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"], shortMonths: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"], days: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"], shortDays: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"], toolbar: { download: 'Descargar SVG', selection: 'Selección', selectionZoom: 'Zoom Selección', zoomIn: 'Acercar', zoomOut: 'Alejar', pan: 'Mover', reset: 'Reiniciar Zoom' }}
-                        }],
+                        locales: [{ name: 'es', options: { months: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"], shortMonths: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"], days: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"], shortDays: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"], toolbar: { download: 'Descargar SVG', selection: 'Selección', selectionZoom: 'Zoom Selección', zoomIn: 'Acercar', zoomOut: 'Alejar', pan: 'Mover', reset: 'Reiniciar Zoom' }} }],
                         defaultLocale: 'es'
                     },
                     colors: ['#0d6efd', '#28a745', '#dc3545'],
@@ -372,6 +398,15 @@
         }
         
         document.addEventListener('DOMContentLoaded', () => {
+            const signupForm = document.getElementById('signup-form');
+            if (signupForm) {
+                signupForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    // Lógica del formulario...
+                });
+            }
+            
+            const dateRangePickerInput = document.getElementById('date-range-picker');
             const today = new Date();
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(today.getDate() - 7);
@@ -383,8 +418,7 @@
                     if (selectedDates.length === 2) updateChart();
                 }
             });
-
-            tradeTypeToggle.checked = true;
+            
             updateTradeTypeLabels();
             fetchMarketSummary();
             setupEventListeners();
