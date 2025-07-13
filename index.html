@@ -82,9 +82,7 @@
                 <div class="bg-white p-8 rounded-xl shadow-lg">
                     <h3 class="text-2xl font-bold mb-4">Análisis del Mercado con IA ✨</h3>
                     <p class="text-gray-600 mb-6">Presiona el botón para obtener un resumen instantáneo del estado del mercado, generado por IA. Ideal para saber qué está pasando de un solo vistazo.</p>
-                    <button id="analyze-market-btn" class="w-full bg-sky-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-sky-600 transition-colors">
-                        Analizar Mercado Ahora
-                    </button>
+                    <button id="analyze-market-btn" class="w-full bg-sky-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-sky-600">Analizar Mercado Ahora</button>
                     <div id="market-analysis-loader" class="hidden mx-auto my-4 loader"></div>
                     <div id="market-analysis-result" class="mt-6 p-4 bg-sky-50 rounded-lg text-gray-700 hidden"></div>
                 </div>
@@ -99,9 +97,7 @@
                             <option value="Agresivo">Agresivo (Alto Riesgo/Recompensa)</option>
                         </select>
                     </div>
-                    <button id="generate-strategy-btn" class="w-full bg-indigo-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-indigo-600 transition-colors">
-                        Generar mi Estrategia
-                    </button>
+                    <button id="generate-strategy-btn" class="w-full bg-indigo-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-indigo-600">Generar mi Estrategia</button>
                     <div id="strategy-loader" class="hidden mx-auto my-4 loader"></div>
                     <div id="strategy-result" class="mt-6 p-4 bg-indigo-50 rounded-lg text-gray-700 hidden"></div>
                 </div>
@@ -114,6 +110,21 @@
             <h2 class="text-3xl font-bold text-center mb-8">Análisis de Precios en Tiempo Real</h2>
             <div class="bg-white rounded-lg shadow-2xl p-4 md:p-8">
                 
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-center">
+                    <div class="bg-sky-100 p-4 rounded-lg">
+                        <h4 class="text-sm font-medium text-gray-500">Precio para Comprar USDT</h4>
+                        <p id="metric-buy-price" class="text-2xl font-bold text-sky-800">- Bs.</p>
+                    </div>
+                    <div class="bg-green-100 p-4 rounded-lg">
+                        <h4 class="text-sm font-medium text-gray-500">Precio para Vender USDT</h4>
+                        <p id="metric-sell-price" class="text-2xl font-bold text-green-800">- Bs.</p>
+                    </div>
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <h4 class="text-sm font-medium text-gray-500">Diferencia (Spread)</h4>
+                        <p id="metric-spread" class="text-2xl font-bold text-gray-800">- Bs.</p>
+                    </div>
+                </div>
+
                 <div class="mb-4 max-w-xs">
                     <label for="frequency-select" class="block text-sm font-medium text-gray-700">Seleccionar Intervalo:</label>
                     <select id="frequency-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm rounded-md">
@@ -126,7 +137,9 @@
                     </select>
                 </div>
     
-                <canvas id="priceChart"></canvas>
+                <div class="relative w-full h-[500px]">
+                    <canvas id="priceChart"></canvas>
+                </div>
             </div>
         </div>
     </section>
@@ -140,9 +153,7 @@
                     <input type="text" id="name" placeholder="Tu Nombre" class="w-full px-4 py-3 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-300" required>
                     <input type="email" id="email" placeholder="Tu Correo Electrónico" class="w-full px-4 py-3 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-300" required>
                 </div>
-                <button id="submit-button" class="w-full bg-white text-sky-600 font-bold px-8 py-4 rounded-lg text-lg hover:bg-sky-50 transition-colors">
-                    ¡Quiero mi Acceso!
-                </button>
+                <button id="submit-button" class="w-full bg-white text-sky-600 font-bold px-8 py-4 rounded-lg text-lg hover:bg-sky-50">¡Quiero mi Acceso!</button>
             </div>
             <div id="success-message" class="hidden text-center p-6 bg-green-500/20 rounded-lg">
                 <h3 class="text-2xl font-bold">¡Gracias por registrarte!</h3>
@@ -157,12 +168,82 @@
             <p class="text-sm text-gray-400 mt-2">Una herramienta para la comunidad de criptomonedas en Bolivia.</p>
         </div>
     </footer>
+
     <script type="module">
-        // --- LÓGICA DEL GRÁFICO DE PRECIOS (VERSIÓN PRO) ---
+        // --- SECCIÓN DE FIREBASE ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = { /* ... tu configuración de firebase ... */ };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const submitButton = document.getElementById('submit-button');
+        if(submitButton) {
+            const nameInput = document.getElementById('name');
+            const emailInput = document.getElementById('email');
+            const registrationForm = document.getElementById('registration-form');
+            const successMessage = document.getElementById('success-message');
+
+            submitButton.addEventListener('click', async () => {
+                const name = nameInput.value.trim();
+                const email = emailInput.value.trim();
+                if (name === '' || email === '' || !/^\S+@\S+\.\S+$/.test(email)) {
+                    alert('Por favor, completa todos los campos con un correo válido.');
+                    return;
+                }
+                submitButton.disabled = true;
+                submitButton.textContent = 'Registrando...';
+                try {
+                    await addDoc(collection(db, "leads"), { name, email, registeredAt: serverTimestamp() });
+                    registrationForm.classList.add('hidden');
+                    successMessage.classList.remove('hidden');
+                } catch (e) {
+                    console.error("Error adding document: ", e);
+                    alert('Hubo un error al registrar tus datos.');
+                    submitButton.disabled = false;
+                    submitButton.textContent = '¡Quiero mi Acceso!';
+                }
+            });
+        }
+        
+        // --- SECCIÓN DE GEMINI AI ---
+        const geminiApiKey = ""; // Añade tu clave de API de Gemini aquí
+
+        function markdownToHtml(text) {
+             return text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>').replace(/\n/g, '<br>');
+        }
+
+        async function callGemini(prompt, button, loader, resultDiv) { /* ... función de llamada a Gemini ... */ }
+        
+        const analyzeMarketBtn = document.getElementById('analyze-market-btn');
+        if(analyzeMarketBtn) {
+            // ... lógica del botón de analizar mercado ...
+        }
+
+        const generateStrategyBtn = document.getElementById('generate-strategy-btn');
+        if(generateStrategyBtn) {
+            // ... lógica del botón de generar estrategia ...
+        }
+
+        // --- SECCIÓN DE MÉTRICAS Y GRÁFICO ---
         const API_URL = "https://p2p-analytics-bolivia-681190831507.us-central1.run.app";
         const chartCanvas = document.getElementById('priceChart');
         const frequencySelect = document.getElementById('frequency-select');
-        let priceChart = null; 
+        let priceChart = null;
+
+        async function fetchMarketSummary() {
+            try {
+                const response = await fetch(`${API_URL}/api/market-summary`);
+                if (!response.ok) return;
+                const data = await response.json();
+                document.getElementById('metric-buy-price').textContent = `${data.latest_buy_price.toFixed(3)} Bs.`;
+                document.getElementById('metric-sell-price').textContent = `${data.latest_sell_price.toFixed(3)} Bs.`;
+                document.getElementById('metric-spread').textContent = `${data.spread.toFixed(3)} Bs.`;
+            } catch (error) {
+                console.error("Error al cargar el resumen del mercado:", error);
+            }
+        }
 
         async function fetchAndDrawChart(frequency = '1H') {
             if (!chartCanvas) return;
@@ -187,70 +268,24 @@
                     throw new Error("No se recibieron datos para este intervalo.");
                 }
 
-                // 1. Preparar datos principales
                 const labels = data.metrics.map(d => new Date(d.timestamp).toLocaleString('es-BO', { dateStyle: 'short', timeStyle: 'short' }));
                 const prices = data.metrics.map(d => d.precio_promedio);
-                
-                // 2. Preparar datos para la LÍNEA DE TENDENCIA
                 const trendData = data.metrics.map(d => d.tendencia);
+                const buyMarkers = data.buy_moments.map(d => ({ x: new Date(d.timestamp).toLocaleString('es-BO', { dateStyle: 'short', timeStyle: 'short' }), y: d.precio_promedio }));
+                const sellMarkers = data.sell_moments.map(d => ({ x: new Date(d.timestamp).toLocaleString('es-BO', { dateStyle: 'short', timeStyle: 'short' }), y: d.precio_promedio }));
 
-                // 3. Preparar datos para los MARCADORES DE COMPRA/VENTA
-                const buyMarkers = data.buy_moments.map(d => ({
-                    x: new Date(d.timestamp).toLocaleString('es-BO', { dateStyle: 'short', timeStyle: 'short' }),
-                    y: d.precio_promedio
-                }));
-                const sellMarkers = data.sell_moments.map(d => ({
-                    x: new Date(d.timestamp).toLocaleString('es-BO', { dateStyle: 'short', timeStyle: 'short' }),
-                    y: d.precio_promedio
-                }));
-
-
-                if (priceChart) {
-                    priceChart.destroy();
-                }
+                if (priceChart) priceChart.destroy();
 
                 priceChart = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: labels,
-                        // AÑADIMOS LOS NUEVOS DATASETS
                         datasets: [
-                        {
-                            label: 'Precio Promedio',
-                            data: prices,
-                            borderColor: 'rgb(54, 162, 235)',
-                            backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                            fill: true,
-                            tension: 0.1,
-                            order: 1 // Dibuja esto primero
-                        },
-                        {
-                            label: 'Tendencia',
-                            data: trendData,
-                            borderColor: 'rgba(255, 99, 132, 0.8)',
-                            borderDash: [5, 5], // Línea punteada
-                            fill: false,
-                            pointRadius: 0,
-                            order: 2
-                        },
-                        {
-                            label: 'Oportunidad de Compra',
-                            data: buyMarkers,
-                            type: 'scatter',
-                            backgroundColor: 'rgba(40, 167, 69, 1)',
-                            pointStyle: 'circle',
-                            radius: 7,
-                            order: 0 // Dibuja esto encima de todo
-                        },
-                        {
-                            label: 'Oportunidad de Venta',
-                            data: sellMarkers,
-                            type: 'scatter',
-                            backgroundColor: 'rgba(220, 53, 69, 1)',
-                            pointStyle: 'crossRot',
-                            radius: 7,
-                            order: 0
-                        }]
+                            { label: 'Precio Promedio', data: prices, borderColor: 'rgb(54, 162, 235)', backgroundColor: 'rgba(54, 162, 235, 0.1)', fill: true, tension: 0.1, order: 1 },
+                            { label: 'Tendencia', data: trendData, borderColor: 'rgba(255, 99, 132, 0.8)', borderDash: [5, 5], fill: false, pointRadius: 0, order: 2 },
+                            { label: 'Oportunidad de Compra', data: buyMarkers, type: 'scatter', backgroundColor: 'rgba(40, 167, 69, 1)', pointStyle: 'circle', radius: 7, order: 0 },
+                            { label: 'Oportunidad de Venta', data: sellMarkers, type: 'scatter', backgroundColor: 'rgba(220, 53, 69, 1)', pointStyle: 'crossRot', radius: 7, order: 0 }
+                        ]
                     },
                     options: {
                         responsive: true,
@@ -261,7 +296,6 @@
                         }
                     }
                 });
-
             } catch (error) {
                 console.error("No se pudo cargar el gráfico:", error);
                 if (priceChart) priceChart.destroy();
@@ -271,18 +305,17 @@
             }
         }
 
-        frequencySelect.addEventListener('change', (event) => {
-            fetchAndDrawChart(event.target.value);
-        });
+        if (frequencySelect) {
+            frequencySelect.addEventListener('change', (event) => {
+                fetchAndDrawChart(event.target.value);
+            });
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Asegúrate de que todos los event listeners de la página estén listos
-            // y luego carga el gráfico.
-            setTimeout(() => {
-                if(chartCanvas) {
-                    fetchAndDrawChart(frequencySelect.value);
-                }
-            }, 100); 
+            fetchMarketSummary();
+            if (chartCanvas) {
+                fetchAndDrawChart(frequencySelect.value);
+            }
         });
     </script>
 </body>
