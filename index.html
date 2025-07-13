@@ -351,15 +351,21 @@
                     })) : [];
                 
                 const volThreshold = data.volatility_threshold;
-                const volatilityAnnotations = chartState.showVolatility ? data.metrics
-                    .filter(d => d.precio_promedio !== null && d.volatilidad !== null)
-                    .map((d, i, arr) => {
-                        // Aseguramos que el siguiente punto exista y tenga datos para dibujar el rango
-                        const nextPoint = arr[i + 1];
-                        const x2 = nextPoint ? new Date(nextPoint.timestamp).getTime() : new Date(d.timestamp).getTime() + 1;
-                        const fillColor = d.volatilidad <= volThreshold ? 'rgba(54, 162, 235, 0.25)' : 'rgba(255, 159, 64, 0.25)';
-                        return { x: new Date(d.timestamp).getTime(), x2: x2, fillColor: fillColor, label: { text: '' } };
-                    }) : [];
+                const volatilityAnnotations = [];
+                if (chartState.showVolatility) {
+                    for (let i = 0; i < data.metrics.length - 1; i++) {
+                        const currentPoint = data.metrics[i];
+                        const nextPoint = data.metrics[i+1];
+                        if (currentPoint.volatilidad !== null && currentPoint.precio_promedio !== null) {
+                            volatilityAnnotations.push({
+                                x: new Date(currentPoint.timestamp).getTime(),
+                                x2: new Date(nextPoint.timestamp).getTime(),
+                                fillColor: currentPoint.volatilidad <= volThreshold ? 'rgba(54, 162, 235, 0.25)' : 'rgba(255, 159, 64, 0.25)',
+                                label: { text: '' }
+                            });
+                        }
+                    }
+                }
                 
                 const options = {
                     series: series,
@@ -402,7 +408,32 @@
             if (signupForm) {
                 signupForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    // Lógica del formulario...
+                    const nameInput = document.getElementById('name');
+                    const emailInput = document.getElementById('email');
+                    const name = nameInput.value.trim();
+                    const email = emailInput.value.trim();
+
+                    if (name && email) {
+                        const submitButton = signupForm.querySelector('button');
+                        submitButton.disabled = true;
+                        submitButton.textContent = 'Registrando...';
+                        try {
+                            await addDoc(collection(db, "early_access_registrations"), { name: name, email: email, timestamp: new Date() });
+                            signupMessage.textContent = "¡Gracias por registrarte! Te avisaremos pronto.";
+                            signupMessage.className = "mt-4 text-sm font-medium h-5 text-green-300";
+                            signupForm.reset();
+                        } catch (error) {
+                            console.error("Error al añadir documento: ", error);
+                            signupMessage.textContent = "Error en el registro. Revisa las reglas de Firebase.";
+                            signupMessage.className = "mt-4 text-sm font-medium h-5 text-red-300";
+                        } finally {
+                            submitButton.disabled = false;
+                            submitButton.textContent = '¡Registrarme!';
+                        }
+                    } else {
+                        signupMessage.textContent = "Por favor, completa ambos campos.";
+                        signupMessage.className = "mt-4 text-sm font-medium h-5 text-yellow-300";
+                    }
                 });
             }
             
