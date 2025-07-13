@@ -257,11 +257,11 @@
         const chartState = {
             tradeType: 'SELL',
             frequency: '1h',
-            showTrend: true,
+            showRange: true, // ✅ Se cambió la propiedad
             showMoments: true,
             showVolatility: true,
         };
-        
+
         function updateTradeTypeLabels() {
             if (chartState.tradeType === 'SELL') {
                 labelComprar.classList.add('font-bold', 'text-sky-600');
@@ -284,9 +284,19 @@
                 document.getElementById('metric-buy-price').textContent = `${(data.latest_buy_price || 0).toFixed(2)} Bs.`;
                 document.getElementById('metric-sell-price').textContent = `${(data.latest_sell_price || 0).toFixed(2)} Bs.`;
                 document.getElementById('metric-spread').textContent = `${(data.spread || 0).toFixed(3)} Bs.`;
-            } catch (error) {
-                console.error("Error al cargar resumen:", error);
-            }
+
+                // ✅ MOSTRAR FECHA DE ACTUALIZACIÓN
+                if (data.last_updated) {
+                    const lastUpdatedDate = new Date(data.last_updated);
+                    const formattedDate = lastUpdatedDate.toLocaleString('es-BO', {
+                        year: 'numeric', month: 'long', day: 'numeric',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit'
+                    });
+                    document.getElementById('last-updated-timestamp').textContent = formattedDate;
+                    document.getElementById('last-updated-container').style.display = 'block';
+                }
+
+            } catch (error) { console.error("Error al cargar resumen:", error); }
         }
 
         async function updateChart() {
@@ -325,7 +335,9 @@
 
                 // --- PREPARACIÓN DE DATOS PARA APEXCHARTS ---
                 const priceSeries = { name: 'Precio Promedio', data: data.metrics.map(d => [new Date(d.timestamp).getTime(), d.precio_promedio]) };
-                const trendSeries = { name: 'Tendencia', data: data.metrics.map(d => [new Date(d.timestamp).getTime(), d.tendencia]) };
+                // ✅ NUEVAS SERIES PARA MÍNIMO Y MÁXIMO
+                const minPriceSeries = { name: 'Precio Mínimo', data: data.metrics.map(d => [new Date(d.timestamp).getTime(), d.precio_minimo]) };
+                const maxPriceSeries = { name: 'Precio Máximo', data: data.metrics.map(d => [new Date(d.timestamp).getTime(), d.precio_maximo]) };
                 
                 const buyAnnotations = chartState.showMoments ? data.buy_moments.map(d => ({
                     x: new Date(d.timestamp).getTime(), y: d.precio_promedio,
@@ -340,20 +352,18 @@
                 })) : [];
                 
                 let series = [priceSeries];
-                if (chartState.showTrend) series.push(trendSeries);
+                // ✅ AÑADIMOS LAS SERIES DE MIN/MAX SI EL CHECKBOX ESTÁ ACTIVO
+                if (chartState.showRange) {
+                    series.push(maxPriceSeries, minPriceSeries);
+                }
                 
                 const volThreshold = data.volatility_threshold;
-                const calmAnnotations = chartState.showVolatility ? data.metrics.filter(d => d.volatilidad <= volThreshold).map((d, i, arr) => ({
-                    x: new Date(d.timestamp).getTime(),
-                    x2: i + 1 < arr.length ? new Date(arr[i+1].timestamp).getTime() : new Date(d.timestamp).getTime() + 1, // Fix para el último punto
-                    fillColor: 'rgba(54, 162, 235, 0.1)',
-                    label: { text: '' }
+                // ✅ VOLATILIDAD MÁS OSCURA
+                const calmAnnotations = chartState.showVolatility ? data.metrics.filter(d => d.volatilidad <= volThreshold).map(d => ({
+                    x: new Date(d.timestamp).getTime(), x2: null, fillColor: 'rgba(54, 162, 235, 0.25)', label: { text: '' }
                 })) : [];
-                const agitatedAnnotations = chartState.showVolatility ? data.metrics.filter(d => d.volatilidad > volThreshold).map((d, i, arr) => ({
-                    x: new Date(d.timestamp).getTime(),
-                    x2: i + 1 < arr.length ? new Date(arr[i+1].timestamp).getTime() : new Date(d.timestamp).getTime() + 1,
-                    fillColor: 'rgba(255, 159, 64, 0.1)',
-                    label: { text: '' }
+                const agitatedAnnotations = chartState.showVolatility ? data.metrics.filter(d => d.volatilidad > volThreshold).map(d => ({
+                    x: new Date(d.timestamp).getTime(), x2: null, fillColor: 'rgba(255, 159, 64, 0.25)', label: { text: '' }
                 })) : [];
                 
                 // --- OPCIONES DEL GRÁFICO APEXCHARTS ---
@@ -367,8 +377,12 @@
                         type: 'line', height: 450, id: 'priceChartWithBrush',
                         toolbar: { autoSelected: 'pan', show: true },
                     },
-                    colors: ['#0d6efd', '#6c757d'],
-                    stroke: { width: [2, 1.5], curve: 'smooth', dashArray: [0, 5] },
+                    colors: ['#0d6efd', '#28a745', '#dc3545'], // Promedio (Azul), Máximo (Verde), Mínimo (Rojo)
+                    stroke: {
+                        width: [2.5, 1.5, 1.5],
+                        curve: 'smooth',
+                        dashArray: [0, 4, 4] // Línea sólida para promedio, punteada para min/max
+                    },
                     xaxis: { type: 'datetime', labels: { datetimeUTC: false, format: 'dd MMM HH:mm' } },
                     yaxis: {
                         labels: { formatter: (value) => value ? value.toFixed(2) + " Bs." : '' },
@@ -394,6 +408,7 @@
             showTrendCheck.addEventListener('change', () => { chartState.showTrend = showTrendCheck.checked; updateChart(); });
             showMomentsCheck.addEventListener('change', () => { chartState.showMoments = showMomentsCheck.checked; updateChart(); });
             showVolatilityCheck.addEventListener('change', () => { chartState.showVolatility = showVolatilityCheck.checked; updateChart(); });
+            showRangeCheck.addEventListener('change', () => { chartState.showRange = showRangeCheck.checked; updateChart(); });
         }
         
         document.addEventListener('DOMContentLoaded', () => {
