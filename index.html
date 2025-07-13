@@ -193,10 +193,47 @@
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
         const firebaseConfig = { apiKey: "AIzaSyAaJ4ELW_HLcjlHXDVIASrPpctWMIHYeIo", authDomain: "p2p-analytics-bolivia.firebaseapp.com", projectId: "p2p-analytics-bolivia", storageBucket: "p2p-analytics-bolivia.firebasestorage.app", messagingSenderId: "681190831507", appId: "1:681190831507:web:7ce2211b0356ac5b20e466", measurementId: "G-NVNVSYDJ46" };
         const app = initializeApp(firebaseConfig);
-        // ... Lógica del formulario de registro ...
+        const db = getFirestore(app);
 
+        // ✅ **SOLUCIÓN 2: LÓGICA COMPLETA DEL FORMULARIO RESTAURADA**
+        const signupForm = document.getElementById('signup-form');
+        if (signupForm) {
+            signupForm.addEventListener('submit', async (e) => {
+                // Previene la recarga de la página
+                e.preventDefault(); 
+                
+                const nameInput = document.getElementById('name');
+                const emailInput = document.getElementById('email');
+                const signupMessage = document.getElementById('signup-message');
+                const name = nameInput.value.trim();
+                const email = emailInput.value.trim();
+
+                if (name && email) {
+                    const submitButton = signupForm.querySelector('button');
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Registrando...';
+                    try {
+                        await addDoc(collection(db, "early_access_registrations"), { name: name, email: email, timestamp: new Date() });
+                        signupMessage.textContent = "¡Gracias! Registro exitoso.";
+                        signupMessage.className = "mt-4 text-sm font-medium h-5 text-green-300";
+                        signupForm.reset();
+                    } catch (error) {
+                        console.error("Error al añadir documento: ", error);
+                        signupMessage.textContent = "Error en el registro. Inténtalo de nuevo.";
+                        signupMessage.className = "mt-4 text-sm font-medium h-5 text-red-300";
+                    } finally {
+                        submitButton.disabled = false;
+                        submitButton.textContent = '¡Registrarme!';
+                    }
+                } else {
+                    signupMessage.textContent = "Por favor, completa ambos campos.";
+                    signupMessage.className = "mt-4 text-sm font-medium h-5 text-yellow-300";
+                }
+            });
+        }
+        
         // ===================================================================
-        // --- CÓDIGO FINAL CON LÓGICA INTUITIVA Y TODAS LAS FUNCIONES ---
+        // --- SECCIÓN DE GRÁFICO CON AJUSTES FINALES ---
         // ===================================================================
         const API_URL = "https://p2p-analytics-bolivia-681190831507.us-central1.run.app";
         const chartElement = document.getElementById('priceChart');
@@ -213,16 +250,14 @@
         let priceChart = null; 
         let datepicker = null;
 
-        // ✅ **LÓGICA CORREGIDA**: El estado ahora refleja la ACCIÓN DEL USUARIO
         const chartState = {
-            userAction: 'COMPRAR', // Por defecto mostramos el mercado de compra
+            userAction: 'COMPRAR',
             frequency: '1h',
             showRange: true,
             showMoments: true,
             showVolatility: true,
         };
         
-        // ✅ **LÓGICA CORREGIDA**: Resalta la etiqueta que corresponde a la acción del usuario
         function updateTradeTypeLabels() {
             const labelComprar = document.getElementById('label-comprar');
             const labelVender = document.getElementById('label-vender');
@@ -231,7 +266,7 @@
                 labelComprar.classList.remove('text-gray-500');
                 labelVender.classList.remove('font-bold', 'text-sky-600');
                 labelVender.classList.add('text-gray-500');
-            } else { // userAction es 'VENDER'
+            } else {
                 labelVender.classList.add('font-bold', 'text-sky-600');
                 labelVender.classList.remove('text-gray-500');
                 labelComprar.classList.remove('font-bold', 'text-sky-600');
@@ -240,7 +275,6 @@
         }
 
         async function fetchMarketSummary() {
-            // ... (esta función no necesita cambios, ya que siempre muestra ambos precios)
             try {
                 const response = await fetch(`${API_URL}/api/market-summary`);
                 if (!response.ok) return;
@@ -265,13 +299,8 @@
 
             try {
                 if (datepicker.selectedDates.length < 2) throw new Error("Por favor selecciona un rango de fechas.");
-                
                 const startDate = datepicker.selectedDates[0].toISOString().split('T')[0];
                 const endDate = datepicker.selectedDates[1].toISOString().split('T')[0];
-
-                // ✅ **LÓGICA CORREGIDA**: Traduce la acción del usuario al tipo de anuncio correcto para la API
-                // Si quiero COMPRAR, busco anuncios de VENTA ('SELL')
-                // Si quiero VENDER, busco anuncios de COMPRA ('BUY')
                 const apiTradeType = (chartState.userAction === 'COMPRAR') ? 'SELL' : 'BUY';
 
                 const url = new URL(`${API_URL}/api/price-analytics`);
@@ -286,10 +315,8 @@
                     throw new Error(errorData.detail || `Error ${response.status}`);
                 }
                 const data = await response.json();
-                
                 if (!data.metrics || data.metrics.length === 0) throw new Error("No hay suficientes datos para este filtro.");
 
-                // El resto de la lógica de renderizado ya era correcta...
                 const safeMapData = (point, valueKey) => {
                     const value = parseFloat(point[valueKey]);
                     const timestamp = new Date(point.timestamp).getTime();
@@ -298,7 +325,6 @@
                 };
 
                 const priceSeries = { name: 'Precio Promedio', data: data.metrics.map(d => safeMapData(d, 'precio_promedio')).filter(p => p !== null) };
-                
                 let series = [priceSeries];
                 let chartColors = ['#0d6efd'];
                 let strokeOptions = { width: 2.5, curve: 'smooth', dashArray: 0 };
@@ -334,7 +360,24 @@
                 const options = {
                     series: series,
                     annotations: { points: pointAnnotations, xaxis: volatilityAnnotations },
-                    chart: { type: 'line', height: 450, toolbar: { show: true }, zoom: { enabled: true } },
+                    // ✅ **SOLUCIÓN 1: BARRA DE HERRAMIENTAS PERSONALIZADA**
+                    chart: { 
+                        type: 'line', 
+                        height: 450, 
+                        toolbar: {
+                            show: true,
+                            tools: {
+                                download: false, // Ocultar descarga
+                                selection: false, // Ocultar zoom de selección
+                                zoom: false, // Ocultar lupa de zoom
+                                zoomin: false, // Ocultar zoom in
+                                zoomout: false, // Ocultar zoom out
+                                pan: true, // Mantener paneo (mover)
+                                reset: true // Mantener reseteo de zoom/pan
+                            },
+                            autoSelected: 'pan' // Iniciar con la herramienta de mover seleccionada
+                        }
+                    },
                     colors: chartColors,
                     stroke: strokeOptions,
                     xaxis: { type: 'datetime', labels: { datetimeUTC: false } },
@@ -354,28 +397,23 @@
         }
         
         function setupEventListeners() {
-            // ✅ **LÓGICA CORREGIDA**: El toggle ahora establece la ACCIÓN DEL USUARIO
             tradeTypeToggle.addEventListener('change', () => { 
                 chartState.userAction = tradeTypeToggle.checked ? 'VENDER' : 'COMPRAR'; 
                 updateTradeTypeLabels();
                 updateChart(); 
             });
-
             frequencySelect.addEventListener('change', () => { 
                 chartState.frequency = frequencySelect.value; 
                 updateChart(); 
             });
-            
             showRangeCheck.addEventListener('change', () => {
                 chartState.showRange = showRangeCheck.checked;
                 updateChart();
             });
-            
             showMomentsCheck.addEventListener('change', () => {
                 chartState.showMoments = showMomentsCheck.checked;
                 updateChart();
             });
-            
             showVolatilityCheck.addEventListener('change', () => {
                 chartState.showVolatility = showVolatilityCheck.checked;
                 updateChart();
@@ -393,12 +431,9 @@
                 defaultDate: [sevenDaysAgo, today],
                 maxDate: today, 
                 locale: "es",
-                onClose: (selectedDates) => {
-                    if (selectedDates.length === 2) updateChart();
-                }
+                onClose: (selectedDates) => { if (selectedDates.length === 2) updateChart(); }
             });
             
-            // ✅ **LÓGICA CORREGIDA**: Sincroniza el toggle con la acción del usuario
             tradeTypeToggle.checked = (chartState.userAction === 'VENDER');
             showRangeCheck.checked = chartState.showRange;
             showMomentsCheck.checked = chartState.showMoments;
