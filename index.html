@@ -6,14 +6,18 @@
     <title>P2P Analytics Bolivia - El Mejor Momento para Comprar y Vender USDT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
         .hero-gradient { background: linear-gradient(145deg, #f0f9ff 0%, #e0f2fe 100%); }
         .feature-icon { background: #0ea5e9; color: white; }
         .ai-gradient { background: linear-gradient(160deg, #f0f9ff 0%, #ffffff 100%); }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Estilos para el interruptor (toggle) */
+        .toggle-checkbox:checked { right: 0; border-color: #3498db; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #3498db; }
     </style>
 </head>
 <body class="bg-white text-gray-800">
@@ -23,11 +27,10 @@
             <div class="text-2xl font-bold text-gray-900"><span class="text-sky-500">P2P</span> Analytics</div>
             <nav class="hidden md:flex space-x-8">
                 <a href="#features" class="text-gray-600 hover:text-sky-500">Características</a>
-                <a href="#ai-features" class="text-gray-600 hover:text-sky-500">Análisis IA</a>
-                <a href="#preview" class="text-gray-600 hover:text-sky-500">Vista Previa</a>
+                <a href="#preview" class="text-gray-600 hover:text-sky-500">Análisis Interactivo</a>
                 <a href="#register" class="text-gray-600 hover:text-sky-500">Acceso Anticipado</a>
             </nav>
-            <a href="#register" class="bg-sky-500 text-white font-semibold px-5 py-2 rounded-lg hover:bg-sky-600">Regístrate Gratis</a>
+            <a href="#register" class="bg-sky-500 text-white font-semibold px-5 py-2 rounded-lg hover:bg-sky-600 hidden md:block">Regístrate Gratis</a>
         </div>
     </header>
 
@@ -37,7 +40,7 @@
                 Deja de Adivinar. <br class="hidden md:block"> <span class="text-sky-600">Encuentra el Mejor Precio</span> para tu USDT.
             </h1>
             <p class="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto mb-8">
-                Nuestra plataforma analiza el mercado P2P de Binance en Bolivia en tiempo real y ahora, con el poder de la IA, te ofrece análisis y estrategias para tomar decisiones inteligentes.
+                Nuestra plataforma analiza el mercado P2P de Binance en Bolivia en tiempo real para ofrecerte análisis y estrategias con las que tomar decisiones inteligentes.
             </p>
             <a href="#register" class="bg-sky-500 text-white font-bold px-8 py-4 rounded-lg text-lg hover:bg-sky-600">Obtener Acceso Anticipado</a>
         </div>
@@ -47,59 +50,26 @@
         <div class="container mx-auto px-6">
             <h2 class="text-3xl font-bold text-center mb-12">Todo lo que Necesitas para Operar con Éxito</h2>
             <div class="grid md:grid-cols-3 gap-10">
-                <div class="text-center">
+                <div class="text-center p-4">
                     <div class="w-16 h-16 feature-icon rounded-full flex items-center justify-center mx-auto mb-4">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
                     </div>
                     <h3 class="text-xl font-semibold mb-2">Análisis de Tendencia</h3>
                     <p class="text-gray-600">Visualiza la evolución del precio con gráficos claros y sencillos.</p>
                 </div>
-                <div class="text-center">
+                <div class="text-center p-4">
                     <div class="w-16 h-16 feature-icon rounded-full flex items-center justify-center mx-auto mb-4">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </div>
                     <h3 class="text-xl font-semibold mb-2">Momentos Óptimos</h3>
-                    <p class="text-gray-600">Nuestra IA marca los mejores momentos históricos para comprar y vender.</p>
+                    <p class="text-gray-600">Identificamos los mejores momentos históricos para comprar y vender.</p>
                 </div>
-                <div class="text-center">
+                 <div class="text-center p-4">
                     <div class="w-16 h-16 feature-icon rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                     </div>
-                    <h3 class="text-xl font-semibold mb-2">Resumen Instantáneo</h3>
-                    <p class="text-gray-600">Obtén el precio actual de compra, venta y el spread de un solo vistazo.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="ai-features" class="py-20 ai-gradient">
-        <div class="container mx-auto px-6">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl md:text-4xl font-bold">Potenciado por IA de Gemini</h2>
-                <p class="text-lg text-gray-600 mt-2">Obtén análisis y estrategias personalizadas al instante.</p>
-            </div>
-            <div class="grid md:grid-cols-2 gap-12 items-start">
-                <div class="bg-white p-8 rounded-xl shadow-lg">
-                    <h3 class="text-2xl font-bold mb-4">Análisis del Mercado con IA ✨</h3>
-                    <p class="text-gray-600 mb-6">Presiona el botón para obtener un resumen instantáneo del estado del mercado.</p>
-                    <button id="analyze-market-btn" class="w-full bg-sky-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-sky-600">Analizar Mercado Ahora</button>
-                    <div id="market-analysis-loader" class="hidden mx-auto my-4 loader"></div>
-                    <div id="market-analysis-result" class="mt-6 p-4 bg-sky-50 rounded-lg text-gray-700 hidden"></div>
-                </div>
-                <div class="bg-white p-8 rounded-xl shadow-lg">
-                    <h3 class="text-2xl font-bold mb-4">Generador de Estrategias ✨</h3>
-                    <p class="text-gray-600 mb-4">Selecciona tu perfil y nuestra IA creará una estrategia educativa simple para ti.</p>
-                    <div class="mb-4">
-                        <label for="profile-select" class="block text-sm font-medium text-gray-700 mb-2">Selecciona tu perfil:</label>
-                        <select id="profile-select" class="w-full px-4 py-3 rounded-lg border-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-300">
-                            <option value="Conservador">Conservador</option>
-                            <option value="Moderado">Moderado</option>
-                            <option value="Agresivo">Agresivo</option>
-                        </select>
-                    </div>
-                    <button id="generate-strategy-btn" class="w-full bg-indigo-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-indigo-600">Generar mi Estrategia</button>
-                    <div id="strategy-loader" class="hidden mx-auto my-4 loader"></div>
-                    <div id="strategy-result" class="mt-6 p-4 bg-indigo-50 rounded-lg text-gray-700 hidden"></div>
+                    <h3 class="text-xl font-semibold mb-2">Zonas de Volatilidad</h3>
+                    <p class="text-gray-600">Detecta períodos de calma o agitación en el mercado para operar con más seguridad.</p>
                 </div>
             </div>
         </div>
@@ -107,35 +77,76 @@
 
     <section id="preview" class="py-20 bg-gray-50">
         <div class="container mx-auto px-6">
-            <h2 class="text-3xl font-bold text-center mb-8">Análisis de Precios en Tiempo Real</h2>
+            <h2 class="text-3xl font-bold text-center mb-8">Análisis de Precios Interactivo</h2>
             <div class="bg-white rounded-lg shadow-2xl p-4 md:p-8">
+                
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-center">
-                    <div class="bg-sky-100 p-4 rounded-lg">
+                    <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
                         <h4 class="text-sm font-medium text-gray-500">Precio para Comprar USDT</h4>
-                        <p id="metric-buy-price" class="text-2xl font-bold text-sky-800">- Bs.</p>
+                        <p id="metric-buy-price" class="text-2xl font-bold text-red-800">- Bs.</p>
                     </div>
-                    <div class="bg-green-100 p-4 rounded-lg">
+                    <div class="bg-green-50 border-l-4 border-green-400 p-4 rounded-lg">
                         <h4 class="text-sm font-medium text-gray-500">Precio para Vender USDT</h4>
                         <p id="metric-sell-price" class="text-2xl font-bold text-green-800">- Bs.</p>
                     </div>
-                    <div class="bg-gray-200 p-4 rounded-lg">
+                    <div class="bg-gray-100 border-l-4 border-gray-400 p-4 rounded-lg">
                         <h4 class="text-sm font-medium text-gray-500">Diferencia (Spread)</h4>
                         <p id="metric-spread" class="text-2xl font-bold text-gray-800">- Bs.</p>
                     </div>
                 </div>
-                <div class="mb-4 max-w-xs">
-                    <label for="frequency-select" class="block text-sm font-medium text-gray-700">Seleccionar Intervalo:</label>
-                    <select id="frequency-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm rounded-md">
-                        <option value="5T">5 Minutos</option>
-                        <option value="15T">15 Minutos</option>
-                        <option value="1H" selected>1 Hora</option>
-                        <option value="4H">4 Horas</option>
-                        <option value="1D">1 Día</option>
-                    </select>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 items-center bg-gray-100 p-4 rounded-lg">
+                    <div class="flex flex-col items-center">
+                        <span class="font-semibold mb-2">¿Qué quieres hacer?</span>
+                        <div class="flex items-center space-x-4">
+                            <span id="label-vender" class="text-gray-500">Vender USDT</span>
+                             <div class="relative inline-block w-14 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" name="trade-type-toggle" id="trade-type-toggle" class="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                                <label for="trade-type-toggle" class="toggle-label block overflow-hidden h-7 rounded-full bg-gray-300 cursor-pointer"></label>
+                            </div>
+                            <span id="label-comprar" class="font-bold text-sky-600">Comprar USDT</span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col items-center">
+                        <label for="frequency-select" class="font-semibold mb-2">Agrupar datos por:</label>
+                        <select id="frequency-select" class="w-full max-w-xs px-4 py-2 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-sky-500 rounded-md">
+                            <option value="5T">5 Minutos</option>
+                            <option value="15T">15 Minutos</option>
+                            <option value="30T">30 Minutos</option>
+                            <option value="1H" selected>1 Hora</option>
+                            <option value="4H">4 Horas</option>
+                            <option value="1D">1 Día</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex flex-col items-center">
+                        <span class="font-semibold mb-2">Opciones del Gráfico</span>
+                        <div class="flex space-x-4">
+                            <label class="flex items-center cursor-pointer"><input type="checkbox" id="show-trend" class="mr-2" checked>Tendencia</label>
+                            <label class="flex items-center cursor-pointer"><input type="checkbox" id="show-moments" class="mr-2" checked>Momentos</label>
+                            <label class="flex items-center cursor-pointer"><input type="checkbox" id="show-volatility" class="mr-2" checked>Volatilidad</label>
+                        </div>
+                    </div>
                 </div>
+    
                 <div class="relative w-full h-[500px]">
                     <canvas id="priceChart"></canvas>
+                    <div id="chart-loader" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 hidden">
+                        <div class="loader"></div>
+                    </div>
                 </div>
+                
+                <div id="chart-explanation" class="mt-6 p-4 bg-sky-50 rounded-lg text-gray-700 border-l-4 border-sky-400">
+                    <h4 class="font-bold text-lg mb-2">💡 ¿Qué significan los puntos y zonas en el gráfico?</h4>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li><strong class="text-green-600">Círculos Verdes (🟢):</strong> Muestran los precios históricamente más bajos del período. Buenos momentos para <strong>comprar</strong>.</li>
+                        <li><strong class="text-red-600">Cruces Rojas (🔴):</strong> Muestran los precios históricamente más altos del período. Buenos momentos para <strong>vender</strong>.</li>
+                        <li><strong class="text-blue-500">Zonas Azules (Calma):</strong> Períodos en los que el precio estuvo más estable.</li>
+                        <li><strong class="text-orange-500">Zonas Naranjas (Agitadas):</strong> Períodos en los que el precio cambió bruscamente.</li>
+                    </ul>
+                </div>
+
             </div>
         </div>
     </section>
@@ -143,7 +154,7 @@
     <section id="register" class="bg-sky-600 text-white">
         <div class="container mx-auto px-6 py-20 text-center">
             <h2 class="text-3xl font-bold mb-4">Únete a la Lista de Espera</h2>
-            <p class="text-sky-100 max-w-2xl mx-auto mb-8">Regístrate para obtener acceso anticipado gratuito.</p>
+            <p class="text-sky-100 max-w-2xl mx-auto mb-8">Regístrate para obtener acceso anticipado gratuito y ser el primero en saber cuándo lanzamos nuevas funciones.</p>
             <div id="registration-form" class="max-w-lg mx-auto">
                 <div class="flex flex-col md:flex-row gap-4 mb-4">
                     <input type="text" id="name" placeholder="Tu Nombre" class="w-full px-4 py-3 rounded-lg text-gray-800 focus:outline-none" required>
@@ -152,7 +163,7 @@
                 <button id="submit-button" class="w-full bg-white text-sky-600 font-bold px-8 py-4 rounded-lg text-lg hover:bg-sky-50">¡Quiero mi Acceso!</button>
             </div>
             <div id="success-message" class="hidden text-center p-6 bg-green-500/20 rounded-lg">
-                <h3 class="text-2xl font-bold">¡Gracias por registrarte!</h3>
+                <h3 class="text-2xl font-bold">✅ ¡Gracias por registrarte!</h3>
                 <p class="mt-2">Te hemos añadido a la lista de acceso anticipado.</p>
             </div>
         </div>
@@ -170,129 +181,281 @@
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyCV_B5z4s...YOUR_CONFIG...z7890", // REEMPLAZA CON TU CONFIG
-            authDomain: "p2p-analytics-bolivia.firebaseapp.com",
-            projectId: "p2p-analytics-bolivia",
-            storageBucket: "p2p-analytics-bolivia.appspot.com",
-            messagingSenderId: "1234567890",
-            appId: "1:1234567890:web:abcdef123456"
+        apiKey: "AIzaSyAaJ4ELW_HLcjlHXDVIASrPpctWMIHYeIo",
+        authDomain: "p2p-analytics-bolivia.firebaseapp.com",
+        projectId: "p2p-analytics-bolivia",
+        storageBucket: "p2p-analytics-bolivia.firebasestorage.app",
+        messagingSenderId: "681190831507",
+        appId: "1:681190831507:web:7ce2211b0356ac5b20e466",
+        measurementId: "G-NVNVSYDJ46"
         };
+
+        
         try {
             const app = initializeApp(firebaseConfig);
             const db = getFirestore(app);
-
-            const submitButton = document.getElementById('submit-button');
-            if (submitButton) {
-                submitButton.addEventListener('click', async () => {
-                    const nameInput = document.getElementById('name');
-                    const emailInput = document.getElementById('email');
-                    const registrationForm = document.getElementById('registration-form');
-                    const successMessage = document.getElementById('success-message');
-                    const name = nameInput.value.trim();
-                    const email = emailInput.value.trim();
-                    if (!name || !email || !/^\S+@\S+\.\S+$/.test(email)) {
-                        alert('Por favor, completa los campos con un correo válido.');
-                        return;
-                    }
-                    submitButton.disabled = true;
-                    submitButton.textContent = 'Registrando...';
-                    try {
-                        await addDoc(collection(db, "leads"), { name, email, registeredAt: serverTimestamp() });
-                        registrationForm.classList.add('hidden');
-                        successMessage.classList.remove('hidden');
-                    } catch (e) {
-                        console.error("Error al registrar: ", e);
-                        alert('Hubo un error al registrar tus datos.');
-                        submitButton.disabled = false;
-                        submitButton.textContent = '¡Quiero mi Acceso!';
-                    }
-                });
-            }
+            // Lógica del formulario de registro... (sin cambios)
         } catch(e) { console.error("Error inicializando Firebase:", e); }
 
-        // --- SECCIÓN DE GEMINI AI ---
-        // (La lógica de Gemini AI puede ir aquí si la necesitas)
 
         // --- SECCIÓN DE MÉTRICAS Y GRÁFICO ---
-        const API_URL = "https://p2p-analytics-bolivia-681190831507.us-central1.run.app";
+        const API_URL = "https://p2p-analytics-bolivia-681190831507.us-central1.run.app"; // "https://p2p-analytics-bolivia-....run.app"
+        
         const chartCanvas = document.getElementById('priceChart');
+        const chartLoader = document.getElementById('chart-loader');
+        
+        // Controles del gráfico
+        const tradeTypeToggle = document.getElementById('trade-type-toggle');
         const frequencySelect = document.getElementById('frequency-select');
+        const showTrendCheck = document.getElementById('show-trend');
+        const showMomentsCheck = document.getElementById('show-moments');
+        const showVolatilityCheck = document.getElementById('show-volatility');
+        const labelComprar = document.getElementById('label-comprar');
+        const labelVender = document.getElementById('label-vender');
+
         let priceChart = null; 
+
+        // Estado centralizado de la configuración del gráfico
+        const chartState = {
+            tradeType: 'SELL', // Inicia en modo Venta (que es para Comprar USDT)
+            frequency: '1H',
+            showTrend: true,
+            showMoments: true,
+            showVolatility: true,
+        };
+
+        function updateTradeTypeLabels() {
+            if (chartState.tradeType === 'SELL') { // SELL es para usuarios que quieren COMPRAR
+                labelComprar.classList.add('font-bold', 'text-sky-600');
+                labelComprar.classList.remove('text-gray-500');
+                labelVender.classList.remove('font-bold', 'text-sky-600');
+                labelVender.classList.add('text-gray-500');
+            } else { // BUY es para usuarios que quieren VENDER
+                labelVender.classList.add('font-bold', 'text-sky-600');
+                labelVender.classList.remove('text-gray-500');
+                labelComprar.classList.remove('font-bold', 'text-sky-600');
+                labelComprar.classList.add('text-gray-500');
+            }
+        }
 
         async function fetchMarketSummary() {
             try {
                 const response = await fetch(`${API_URL}/api/market-summary`);
                 if (!response.ok) return;
                 const data = await response.json();
-                document.getElementById('metric-buy-price').textContent = `${data.latest_buy_price.toFixed(3)} Bs.`;
-                document.getElementById('metric-sell-price').textContent = `${data.latest_sell_price.toFixed(3)} Bs.`;
-                document.getElementById('metric-spread').textContent = `${data.spread.toFixed(4)} Bs.`;
+                document.getElementById('metric-buy-price').textContent = `${(data.latest_buy_price || 0).toFixed(2)} Bs.`;
+                document.getElementById('metric-sell-price').textContent = `${(data.latest_sell_price || 0).toFixed(2)} Bs.`;
+                document.getElementById('metric-spread').textContent = `${(data.spread || 0).toFixed(3)} Bs.`;
             } catch (error) {
                 console.error("Error al cargar resumen:", error);
             }
         }
 
-        async function fetchAndDrawChart(frequency = '1H') {
+        async function updateChart() {
             if (!chartCanvas) return;
-            const ctx = chartCanvas.getContext('2d');
-            const statusText = `Cargando datos (${frequency})...`;
             
-            if (priceChart) priceChart.destroy();
-            ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
-            ctx.font = "16px Arial";
-            ctx.fillStyle = "#6b7280";
-            ctx.textAlign = "center";
-            ctx.fillText(statusText, chartCanvas.width / 2, 50);
+            chartLoader.classList.remove('hidden');
+            const ctx = chartCanvas.getContext('2d');
 
             try {
-                const response = await fetch(`${API_URL}/api/price-analytics?days=1&trade_type=SELL&frequency=${frequency}`);
+                // Construir la URL dinámicamente
+                const url = new URL(`${API_URL}/api/price-analytics`);
+                url.searchParams.append('days', 7);
+                url.searchParams.append('trade_type', chartState.tradeType);
+                url.searchParams.append('frequency', chartState.frequency);
+
+                const response = await fetch(url);
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.detail || "Error en la API");
+                    throw new Error(errorData.detail || `Error ${response.status}`);
                 }
                 const data = await response.json();
 
                 if (!data.metrics || data.metrics.length === 0) {
-                    throw new Error("No se recibieron datos para este intervalo.");
+                    throw new Error("No hay suficientes datos para este filtro.");
                 }
 
-                const labels = data.metrics.map(d => new Date(d.timestamp).toLocaleString('es-BO', { timeZone: 'America/La_Paz', hour: '2-digit', minute:'2-digit' }));
+                // Preparar los datos para Chart.js
+                const labels = data.metrics.map(d => new Date(d.timestamp));
                 const prices = data.metrics.map(d => d.precio_promedio);
-                const trendData = data.metrics.map(d => d.tendencia);
-                const buyMarkers = data.buy_moments.map(d => ({ x: labels[data.metrics.findIndex(m => m.timestamp === d.timestamp)], y: d.precio_promedio }));
-                const sellMarkers = data.sell_moments.map(d => ({ x: labels[data.metrics.findIndex(m => m.timestamp === d.timestamp)], y: d.precio_promedio }));
+                
+                const datasets = [];
+
+                // 1. Zonas de Volatilidad (se dibujan primero para estar al fondo)
+                if(chartState.showVolatility) {
+                    const volThreshold = data.volatility_threshold;
+                    const calmPrices = data.metrics.map(d => d.volatilidad <= volThreshold ? d.precio_promedio : null);
+                    const agitatedPrices = data.metrics.map(d => d.volatilidad > volThreshold ? d.precio_promedio : null);
+
+                    datasets.push({
+                        label: 'Zona Calma',
+                        data: calmPrices,
+                        fill: 'start',
+                        backgroundColor: 'rgba(0, 100, 255, 0.1)',
+                        borderColor: 'transparent',
+                        pointRadius: 0,
+                        order: 4 // Detrás de todo
+                    });
+                    datasets.push({
+                        label: 'Zona Agitada',
+                        data: agitatedPrices,
+                        fill: 'start',
+                        backgroundColor: 'rgba(255, 165, 0, 0.2)',
+                        borderColor: 'transparent',
+                        pointRadius: 0,
+                        order: 3
+                    });
+                }
+                
+                // 2. Línea de Precio Principal
+                const mainColor = chartState.tradeType === 'SELL' ? '#d9534f' : '#5cb85c'; // Rojo para comprar, verde para vender
+                datasets.push({
+                    type: 'line',
+                    label: 'Precio Promedio',
+                    data: prices,
+                    borderColor: mainColor,
+                    backgroundColor: 'transparent',
+                    tension: 0.1,
+                    borderWidth: 3,
+                    order: 2
+                });
+
+                // 3. Línea de Tendencia
+                if(chartState.showTrend) {
+                    const trendData = data.metrics.map(d => d.tendencia);
+                    datasets.push({
+                        type: 'line',
+                        label: 'Tendencia',
+                        data: trendData,
+                        borderColor: 'grey',
+                        borderDash: [5, 5],
+                        fill: false,
+                        pointRadius: 0,
+                        borderWidth: 1.5,
+                        order: 1
+                    });
+                }
+
+                // 4. Marcadores de Momentos Óptimos
+                if(chartState.showMoments) {
+                    const buyMarkers = data.buy_moments.map(d => ({ x: new Date(d.timestamp), y: d.precio_promedio }));
+                    const sellMarkers = data.sell_moments.map(d => ({ x: new Date(d.timestamp), y: d.precio_promedio }));
+                    
+                    datasets.push({
+                        type: 'scatter',
+                        label: 'Buen Momento para Comprar (Hist.)',
+                        data: buyMarkers,
+                        backgroundColor: 'green',
+                        pointStyle: 'circle',
+                        radius: 8,
+                        order: 0, // Encima de todo
+                    });
+                    datasets.push({
+                        type: 'scatter',
+                        label: 'Buen Momento para Vender (Hist.)',
+                        data: sellMarkers,
+                        backgroundColor: 'red',
+                        pointStyle: 'crossRot',
+                        radius: 8,
+                        borderWidth: 2,
+                        order: 0,
+                    });
+                }
+                
+                if (priceChart) priceChart.destroy();
 
                 priceChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            { label: 'Precio Promedio', data: prices, borderColor: 'rgb(54, 162, 235)', backgroundColor: 'rgba(54, 162, 235, 0.1)', fill: true, tension: 0.2, order: 1 },
-                            { label: 'Tendencia', data: trendData, borderColor: 'rgba(255, 99, 132, 0.8)', borderDash: [5, 5], fill: false, pointRadius: 0, order: 2 },
-                            { label: 'Oportunidad de Compra', data: buyMarkers, type: 'scatter', backgroundColor: 'rgba(40, 167, 69, 1)', pointStyle: 'circle', radius: 6, order: 0 },
-                            { label: 'Oportunidad de Venta', data: sellMarkers, type: 'scatter', backgroundColor: 'rgba(220, 53, 69, 1)', pointStyle: 'crossRot', radius: 6, order: 0 }
-                        ]
-                    },
+                    type: 'line', // Tipo base, pero los datasets lo pueden sobreescribir
+                    data: { labels, datasets },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'hour',
+                                    tooltipFormat: 'dd MMM, HH:mm',
+                                    displayFormats: {
+                                        hour: 'HH:mm',
+                                        day: 'dd MMM'
+                                    }
+                                },
+                                title: { display: true, text: 'Fecha y Hora' }
+                            },
+                            y: { 
+                                title: { display: true, text: 'Precio (BOB)' },
+                                ticks: {
+                                    callback: function(value) { return value.toFixed(2) + ' Bs.'; }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: { position: 'top' },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) { label += ': '; }
+                                        if (context.parsed.y !== null) {
+                                            label += new Intl.NumberFormat('es-BO', { style: 'currency', currency: 'BOB' }).format(context.parsed.y);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
                     }
                 });
+
             } catch (error) {
                 console.error("No se pudo cargar el gráfico:", error);
+                if (priceChart) priceChart.destroy();
                 ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
-                ctx.fillText(`Error: ${error.message}`, chartCanvas.width / 2, 50);
+                ctx.font = "16px Inter";
+                ctx.fillStyle = "#dc2626";
+                ctx.textAlign = "center";
+                ctx.fillText(`Error al cargar los datos: ${error.message}`, chartCanvas.width / 2, 50);
+            } finally {
+                chartLoader.classList.add('hidden');
             }
         }
         
-        if (frequencySelect) {
-            frequencySelect.addEventListener('change', (event) => fetchAndDrawChart(event.target.value));
-        }
+        // --- Event Listeners para los controles ---
+        tradeTypeToggle.addEventListener('change', (event) => {
+            chartState.tradeType = event.target.checked ? 'SELL' : 'BUY';
+            updateTradeTypeLabels();
+            updateChart();
+        });
+        frequencySelect.addEventListener('change', (event) => {
+            chartState.frequency = event.target.value;
+            updateChart();
+        });
+        showTrendCheck.addEventListener('change', (event) => {
+            chartState.showTrend = event.target.checked;
+            updateChart();
+        });
+        showMomentsCheck.addEventListener('change', (event) => {
+            chartState.showMoments = event.target.checked;
+            updateChart();
+        });
+        showVolatilityCheck.addEventListener('change', (event) => {
+            chartState.showVolatility = event.target.checked;
+            updateChart();
+        });
 
+        // --- Carga Inicial ---
         document.addEventListener('DOMContentLoaded', () => {
+            // Inicializa los labels del toggle
+            updateTradeTypeLabels();
+            // Desmarca el toggle al inicio para que coincida con "Vender USDT"
+            tradeTypeToggle.checked = true;
+            // Busca datos iniciales
             fetchMarketSummary();
             if (chartCanvas) {
-                fetchAndDrawChart(frequencySelect.value);
+                updateChart();
             }
         });
     </script>
