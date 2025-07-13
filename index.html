@@ -82,6 +82,10 @@
             <h2 class="text-3xl font-bold text-center mb-8">Análisis de Precios Interactivo</h2>
             <div class="bg-white rounded-lg shadow-2xl p-4 md:p-8">
                 
+                <div id="last-updated-container" class="text-center text-gray-500 text-sm mb-4" style="display: none;">
+                    Última actualización de datos: <span id="last-updated-timestamp" class="font-semibold"></span>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-center">
                     <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg">
                         <h4 class="text-sm font-medium text-gray-500">Precio para Comprar USDT</h4>
@@ -130,7 +134,7 @@
                     <div class="flex flex-col items-center">
                         <span class="font-semibold mb-2">Opciones del Gráfico</span>
                         <div class="flex space-x-4">
-                            <label class="flex items-center cursor-pointer"><input type="checkbox" id="show-trend" class="mr-2" checked>Tendencia</label>
+                            <label class="flex items-center cursor-pointer"><input type="checkbox" id="show-range" class="mr-2" checked>Rango (Mín/Máx)</label>
                             <label class="flex items-center cursor-pointer"><input type="checkbox" id="show-moments" class="mr-2" checked>Momentos</label>
                             <label class="flex items-center cursor-pointer"><input type="checkbox" id="show-volatility" class="mr-2" checked>Volatilidad</label>
                         </div>
@@ -189,15 +193,13 @@
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
         // ❗️ REEMPLAZA ESTO CON TUS PROPIAS CREDENCIALES DE FIREBASE
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
         const firebaseConfig = {
-        apiKey: "AIzaSyAaJ4ELW_HLcjlHXDVIASrPpctWMIHYeIo",
-        authDomain: "p2p-analytics-bolivia.firebaseapp.com",
-        projectId: "p2p-analytics-bolivia",
-        storageBucket: "p2p-analytics-bolivia.firebasestorage.app",
-        messagingSenderId: "681190831507",
-        appId: "1:681190831507:web:7ce2211b0356ac5b20e466",
-        measurementId: "G-NVNVSYDJ46"
+            apiKey: "TU_API_KEY",
+            authDomain: "TU_AUTH_DOMAIN",
+            projectId: "TU_PROJECT_ID",
+            storageBucket: "TU_STORAGE_BUCKET",
+            messagingSenderId: "TU_MESSAGING_SENDER_ID",
+            appId: "TU_APP_ID"
         };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -245,24 +247,24 @@
         const tradeTypeToggle = document.getElementById('trade-type-toggle');
         const frequencySelect = document.getElementById('frequency-select');
         const dateRangePickerInput = document.getElementById('date-range-picker');
-        const showTrendCheck = document.getElementById('show-trend');
+        const showRangeCheck = document.getElementById('show-range');
         const showMomentsCheck = document.getElementById('show-moments');
         const showVolatilityCheck = document.getElementById('show-volatility');
-        const labelComprar = document.getElementById('label-comprar');
-        const labelVender = document.getElementById('label-vender');
-
+        
         let priceChart = null; 
         let datepicker = null;
 
         const chartState = {
             tradeType: 'SELL',
             frequency: '1h',
-            showRange: true, // ✅ Se cambió la propiedad
+            showRange: true,
             showMoments: true,
             showVolatility: true,
         };
-
+        
         function updateTradeTypeLabels() {
+            const labelComprar = document.getElementById('label-comprar');
+            const labelVender = document.getElementById('label-vender');
             if (chartState.tradeType === 'SELL') {
                 labelComprar.classList.add('font-bold', 'text-sky-600');
                 labelComprar.classList.remove('text-gray-500');
@@ -279,44 +281,40 @@
         async function fetchMarketSummary() {
             try {
                 const response = await fetch(`${API_URL}/api/market-summary`);
-                if (!response.ok) return;
+                if (!response.ok) {
+                    console.error(`Error en Market Summary: ${response.statusText}`);
+                    return;
+                }
                 const data = await response.json();
                 document.getElementById('metric-buy-price').textContent = `${(data.latest_buy_price || 0).toFixed(2)} Bs.`;
                 document.getElementById('metric-sell-price').textContent = `${(data.latest_sell_price || 0).toFixed(2)} Bs.`;
                 document.getElementById('metric-spread').textContent = `${(data.spread || 0).toFixed(3)} Bs.`;
 
-                // ✅ MOSTRAR FECHA DE ACTUALIZACIÓN
                 if (data.last_updated) {
                     const lastUpdatedDate = new Date(data.last_updated);
                     const formattedDate = lastUpdatedDate.toLocaleString('es-BO', {
                         year: 'numeric', month: 'long', day: 'numeric',
-                        hour: '2-digit', minute: '2-digit', second: '2-digit'
+                        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
                     });
                     document.getElementById('last-updated-timestamp').textContent = formattedDate;
                     document.getElementById('last-updated-container').style.display = 'block';
                 }
-
-            } catch (error) { console.error("Error al cargar resumen:", error); }
+            } catch (error) { console.error("Error al cargar resumen del mercado:", error); }
         }
 
         async function updateChart() {
             if (!chartElement || !datepicker) return;
             
             chartLoader.classList.remove('hidden');
-            if (priceChart) {
-                priceChart.destroy();
-            }
-            chartElement.innerHTML = ''; // Limpia cualquier mensaje de error anterior
+            if (priceChart) { priceChart.destroy(); }
+            chartElement.innerHTML = '';
 
             try {
-                if (datepicker.selectedDates.length < 2) {
-                    throw new Error("Por favor selecciona un rango de fechas.");
-                }
+                if (datepicker.selectedDates.length < 2) { throw new Error("Por favor selecciona un rango de fechas."); }
                 const startDate = datepicker.selectedDates[0].toISOString().split('T')[0];
                 const endDate = datepicker.selectedDates[1].toISOString().split('T')[0];
 
                 const url = new URL(`${API_URL}/api/price-analytics`);
-                // ✅ CORRECCIÓN DEL BUG CRÍTICO
                 url.searchParams.append('start_date', startDate);
                 url.searchParams.append('end_date', endDate);
                 url.searchParams.append('trade_type', chartState.tradeType);
@@ -329,36 +327,29 @@
                 }
                 const data = await response.json();
 
-                if (!data.metrics || data.metrics.length === 0) {
-                    throw new Error("No hay suficientes datos para este filtro.");
-                }
+                if (!data.metrics || data.metrics.length === 0) { throw new Error("No hay suficientes datos para este filtro."); }
 
-                // --- PREPARACIÓN DE DATOS PARA APEXCHARTS ---
                 const priceSeries = { name: 'Precio Promedio', data: data.metrics.map(d => [new Date(d.timestamp).getTime(), d.precio_promedio]) };
-                // ✅ NUEVAS SERIES PARA MÍNIMO Y MÁXIMO
                 const minPriceSeries = { name: 'Precio Mínimo', data: data.metrics.map(d => [new Date(d.timestamp).getTime(), d.precio_minimo]) };
                 const maxPriceSeries = { name: 'Precio Máximo', data: data.metrics.map(d => [new Date(d.timestamp).getTime(), d.precio_maximo]) };
+                
+                let series = [priceSeries];
+                if (chartState.showRange) {
+                    series.push(maxPriceSeries, minPriceSeries);
+                }
                 
                 const buyAnnotations = chartState.showMoments ? data.buy_moments.map(d => ({
                     x: new Date(d.timestamp).getTime(), y: d.precio_promedio,
                     marker: { size: 5, fillColor: '#198754', strokeColor: '#fff', radius: 2, shape: 'circle' },
                     label: { text: 'Compra', borderColor: '#198754', style: { color: '#fff', background: '#198754', fontSize: '10px', padding: {left: 4, right: 4, top: 2, bottom: 2} } }
                 })) : [];
-
                 const sellAnnotations = chartState.showMoments ? data.sell_moments.map(d => ({
                     x: new Date(d.timestamp).getTime(), y: d.precio_promedio,
                     marker: { size: 5, fillColor: '#dc3545', strokeColor: '#fff', radius: 2, shape: 'circle' },
                     label: { text: 'Venta', borderColor: '#dc3545', style: { color: '#fff', background: '#dc3545', fontSize: '10px', padding: {left: 4, right: 4, top: 2, bottom: 2} } }
                 })) : [];
                 
-                let series = [priceSeries];
-                // ✅ AÑADIMOS LAS SERIES DE MIN/MAX SI EL CHECKBOX ESTÁ ACTIVO
-                if (chartState.showRange) {
-                    series.push(maxPriceSeries, minPriceSeries);
-                }
-                
                 const volThreshold = data.volatility_threshold;
-                // ✅ VOLATILIDAD MÁS OSCURA
                 const calmAnnotations = chartState.showVolatility ? data.metrics.filter(d => d.volatilidad <= volThreshold).map(d => ({
                     x: new Date(d.timestamp).getTime(), x2: null, fillColor: 'rgba(54, 162, 235, 0.25)', label: { text: '' }
                 })) : [];
@@ -366,28 +357,32 @@
                     x: new Date(d.timestamp).getTime(), x2: null, fillColor: 'rgba(255, 159, 64, 0.25)', label: { text: '' }
                 })) : [];
                 
-                // --- OPCIONES DEL GRÁFICO APEXCHARTS ---
                 const options = {
                     series: series,
-                    annotations: {
-                        points: [...buyAnnotations, ...sellAnnotations],
-                        xaxis: [...calmAnnotations, ...agitatedAnnotations]
-                    },
+                    annotations: { points: [...buyAnnotations, ...sellAnnotations], xaxis: [...calmAnnotations, ...agitatedAnnotations] },
                     chart: {
                         type: 'line', height: 450, id: 'priceChartWithBrush',
-                        toolbar: { autoSelected: 'pan', show: true },
+                        toolbar: { autoSelected: 'zoom', show: true },
+                        brush: { enabled: true, autoScaleYaxis: false },
+                        locales: [{
+                            name: 'es',
+                            options: {
+                                months: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+                                shortMonths: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
+                                days: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
+                                shortDays: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+                                toolbar: {
+                                    download: 'Descargar SVG', selection: 'Selección', selectionZoom: 'Zoom Selección',
+                                    zoomIn: 'Acercar', zoomOut: 'Alejar', pan: 'Mover', reset: 'Reiniciar Zoom'
+                                }
+                            }
+                        }],
+                        defaultLocale: 'es'
                     },
-                    colors: ['#0d6efd', '#28a745', '#dc3545'], // Promedio (Azul), Máximo (Verde), Mínimo (Rojo)
-                    stroke: {
-                        width: [2.5, 1.5, 1.5],
-                        curve: 'smooth',
-                        dashArray: [0, 4, 4] // Línea sólida para promedio, punteada para min/max
-                    },
+                    colors: ['#0d6efd', '#28a745', '#dc3545'],
+                    stroke: { width: [2.5, 1.5, 1.5], curve: 'smooth', dashArray: [0, 4, 4] },
                     xaxis: { type: 'datetime', labels: { datetimeUTC: false, format: 'dd MMM HH:mm' } },
-                    yaxis: {
-                        labels: { formatter: (value) => value ? value.toFixed(2) + " Bs." : '' },
-                        title: { text: 'Precio (BOB)' }
-                    },
+                    yaxis: { labels: { formatter: (value) => value ? value.toFixed(2) + " Bs." : '' }, title: { text: 'Precio (BOB)' }},
                     tooltip: { x: { format: 'dd MMM yyyy - HH:mm' } }
                 };
                 
@@ -405,10 +400,9 @@
         function setupEventListeners() {
             tradeTypeToggle.addEventListener('change', () => { chartState.tradeType = tradeTypeToggle.checked ? 'SELL' : 'BUY'; updateTradeTypeLabels(); updateChart(); });
             frequencySelect.addEventListener('change', () => { chartState.frequency = frequencySelect.value; updateChart(); });
-            showTrendCheck.addEventListener('change', () => { chartState.showTrend = showTrendCheck.checked; updateChart(); });
+            showRangeCheck.addEventListener('change', () => { chartState.showRange = showRangeCheck.checked; updateChart(); });
             showMomentsCheck.addEventListener('change', () => { chartState.showMoments = showMomentsCheck.checked; updateChart(); });
             showVolatilityCheck.addEventListener('change', () => { chartState.showVolatility = showVolatilityCheck.checked; updateChart(); });
-            showRangeCheck.addEventListener('change', () => { chartState.showRange = showRangeCheck.checked; updateChart(); });
         }
         
         document.addEventListener('DOMContentLoaded', () => {
